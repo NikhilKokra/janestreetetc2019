@@ -94,6 +94,7 @@ def main():
         try:
             bonds(conn)
         except Exception as e:
+            conn = Connection(exchange_hostname)
             print("bonds didnt work")
             print(e)
 
