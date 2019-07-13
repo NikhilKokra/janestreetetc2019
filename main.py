@@ -130,7 +130,6 @@ def bonds(conn):
     bonds_helper(conn, 1002, 33, bond_orders_d, "SELL")
     bonds_helper(conn, 1003, 43, bond_orders_d, "SELL")
 
-
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
 
