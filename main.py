@@ -250,9 +250,9 @@ def main():
             print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                bonds(conn, data)
-                #etf(conn, data)
-
+                #bonds(conn, data)
+                etf(conn, data)
+"""
             if len(last_prices["VALE"]["best_bid"]) > 1 and len(last_prices["VALBZ"]["best_bid"]) > 10 and adr_iter > 0:
                 print("--------------")
                 print()
@@ -261,7 +261,7 @@ def main():
                 print("--------------")
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     adr_iter = -20
-
+"""
         except Exception as e:
             print("bonds didnt work")
             print(e)
