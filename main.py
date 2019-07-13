@@ -106,8 +106,10 @@ def update_price(conn, data):
     symbol = data['symbol']
     bid = last_prices[symbol]['best_bid'] 
     ask = last_prices[symbol]['best_ask']
-    _update_price_bid(data["buy"][0], symbol, bid)
-    _update_price_ask(data["sell"][0], symbol, bid)
+    if len(data["buy"]) > 0:
+        _update_price_bid(data["buy"][-1], symbol, bid)
+    if len(data["sell"]) > 0:
+        _update_price_ask(data["sell"][0], symbol, bid)
 
 def etf(conn, data):
     print(last_prices)
