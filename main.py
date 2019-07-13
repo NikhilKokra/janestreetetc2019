@@ -10,13 +10,15 @@ from __future__ import print_function
 import sys
 import socket
 import json
+import time
+import os
 
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
 team_name = "cablecar"
 # This variable dictates whether or not the bot is connecting to the prod
 # or test exchange. Be careful with this switch!
-test_mode = True
+test_mode = os.environ.get("TYPE") != "production"
 
 # This setting changes which test exchange is connected to.
 # 0 is prod-like
@@ -63,10 +65,10 @@ class Connection(object):
 
 def bonds(conn):
     i = 0
-    for i in range(0, 1):
-        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 40})
+    for i in range(0, 10):
+        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
         i += 1
-        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 40})
+        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
         i += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -91,8 +93,11 @@ def main():
             print("bonds didnt work")
             print(e)
 
+        time.sleep(.5)
 
 
 
 if __name__ == "__main__":
     main()
+
+
