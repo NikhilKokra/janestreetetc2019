@@ -13,7 +13,7 @@ import json
 
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
-team_name = "Cable Car"
+team_name = "cablecar"
 # This variable dictates whether or not the bot is connecting to the prod
 # or test exchange. Be careful with this switch!
 test_mode = True
@@ -34,6 +34,7 @@ exchange_hostname = "test-exch-" + \
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(exchange_hostname)
     s.connect((exchange_hostname, port))
     return s.makefile('rw', 1)
 
@@ -53,11 +54,12 @@ def main():
     exchange = connect()
     write_to_exchange(exchange, {"type": "hello", "team": team_name.upper()})
     hello_from_exchange = read_from_exchange(exchange)
+    first_beat = read_from_exchange(exchange)
     # A common mistake people make is to call write_to_exchange() > 1
     # time for every read_from_exchange() response.
     # Since many write messages generate marketdata, this will cause an
     # exponential explosion in pending messages. Please, don't do that!
-    print("The exchange replied:", hello_from_exchange, file=sys.stderr)
+    print("The exchange replied:", first_beat, file=sys.stderr)
 
 
 if __name__ == "__main__":
