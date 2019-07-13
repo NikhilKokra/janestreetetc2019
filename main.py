@@ -129,11 +129,11 @@ def bonds(conn, data=None):
     for i in range(0, 5):
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        print(resp)
         id += 1
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        print(resp)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -173,7 +173,7 @@ def update_price(conn, data):
 
 
 def etf(conn, data):
-    pprint.pprint(data)
+    print(data)
 
 
 def main():
@@ -191,14 +191,18 @@ def main():
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
-            pprint.pprint(data)
+            print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
                 bonds(conn, data)
                 etf(conn, data)
 
             if len(last_prices["VALE"]["best_bid"]) > 5 and len(last_prices["VALBZ"]["best_bid"]) > 5:
+                print("-----------------")
+                print()
                 print("CALLED ADR")
+                print()
+                print("--------------")
                 adr(conn, last_prices["VALBZ"], last_prices["VALE"])
 
 
