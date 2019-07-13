@@ -62,7 +62,9 @@ class Connection(object):
 
     def request(self, obj):
         self.write_to_exchange(obj)
-        return self.read_from_exchange()
+        resp = self.read_from_exchange()
+        _update_bond_orders(resp)
+        return resp
 
     def write_to_exchange(self, obj):
         json.dump(obj, self.exchange)
@@ -96,7 +98,7 @@ def adr(conn, valbz, vale):
     stock_bids = valbz['best_bid']
     stock_asks = valbz['best_ask']
 
-    #arbitrage opp
+    # arbitrage opp
     if adr_bids[0] - stock_asks[0] > 10:
         quantity = min(stock_asks[1], adr_bids[1])
         conn.add_ticker("VALBZ", "BUY", stock_asks[0], quantity)
@@ -116,11 +118,11 @@ def bonds(conn, data=None):
     global id
     resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                          "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-    # print(resp)
+    _handle_bond_resp(resp)
     id += 1
     resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                          "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-    # print(resp)
+    _handle_bond_resp(resp)
     id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -135,19 +137,23 @@ last_prices = {
 last_n = 15
 
 
-def _handle_resp(req, resp):
+def _handle_bond_resp(req, resp):
     print(resp)
     if resp['type'] == 'ack':
         if req['dir'] == 'BUY':
             pending_bond_orders[req['order_id']] = [req['price'], req['size']]
         elif req['dir'] == 'SELL':
-            pending_bond_orders[req['order_id']] = [req['price'], req['size']]
+            pending_bond_orders[req['order_id']] = [
+                req['price'], req['size'] * -1]
 
 
 def _update_bond_orders(resp):
     if resp['symbol'] == 'BOND':
         if resp['type'] == 'fill':
-            pending_bond_orders[resp['order_id']] -= resp['size']
+            if resp['dir'] == 'BUY':
+                pending_bond_orders[resp['order_id']] -= resp['size']
+            elif resp['dir'] == 'SELL':
+                pending_bond_orders[resp['order_id']] += resp['size']
         elif resp['type'] == 'out':
             del pending_bond_orders[resp['order_id']]
     print(resp)
