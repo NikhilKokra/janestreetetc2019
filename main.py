@@ -86,8 +86,8 @@ class Connection(object):
 
 def adr(conn, valbz, vale):
     global id
-    adr_bids = vale['best_bid']
-    adr_asks = vale['best_ask']
+    adr_bids = [vale['best_bid']]
+    adr_asks = [vale['best_ask']]
 
     stock_bids = [valbz['best_bid']]
     stock_asks = [valbz['best_ask']]
