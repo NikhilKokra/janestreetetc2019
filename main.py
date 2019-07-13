@@ -66,10 +66,11 @@ class Connection(object):
         if data["type"] == "error":
             raise Exception("Server returned error: %s" % data["error"])
         return data
-    
+
     def add_ticker(self, symbol, side, price, size):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+
 
 def bonds(conn, data = None):
     global id
@@ -124,6 +125,10 @@ def main():
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
+        data = conn.read_from_exchange()
+        print("---DATA---")
+        print(data)
+
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
@@ -135,15 +140,12 @@ def main():
                 bonds(conn, data)
                 etf(conn, data)
         except Exception as e:
-            conn = Connection(exchange_hostname)
             print("bonds didnt work")
             print(e)
+            sys.exit(1)
 
         time.sleep(.5)
 
 
-
 if __name__ == "__main__":
     main()
-
-
