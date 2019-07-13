@@ -93,6 +93,10 @@ def adr(conn, valbz, vale):
 
     threshold = largest_diff * .2
 
+    print(str(adr_midpoints))
+    print(str(adr_bids))
+    print(str(largest_diff))
+
     print("threshold " + str(threshold))
     print("adr best bid " + str(adr_bids[-1]))
     print("adr best ask " + str(adr_asks[-1]))
