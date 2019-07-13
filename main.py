@@ -13,6 +13,7 @@ import json
 import time
 import os
 import random
+import pprint
 
 id = 0
 
@@ -36,8 +37,6 @@ prod_exchange_hostname = "production"
 port = 25000 + (test_exchange_index if test_mode else 0)
 exchange_hostname = "test-exch-" + \
     team_name if test_mode else prod_exchange_hostname
-
-bonds = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
@@ -85,24 +84,88 @@ class Connection(object):
         return req
 
 
-def bonds(conn, data = None):
+def adr(conn, valbz, vale):
     global id
-    i = 0
-    for i in range(0, 5):
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": (1000 - random.randint(1,6)), "size": 10})
+    adr_bids = vale['best_bid']
+    adr_asks = vale['best_ask']
+
+    stock_bids = valbz['best_bid']
+    stock_asks = valbz['best_ask']
+
+    adr_midpoints = []
+    for i in range(len(adr_bids)):
+        adr_midpoints += [(adr_asks[i][0] + adr_bids[i][0]) / 2]
+
+    stock_midpoints = []
+    for i in range(len(stock_bids)):
+        stock_midpoints += [(stock_asks[i][0] + stock_bids[i][0]) / 2]
+
+    largest_diff = ((max(stock_midpoints) - min(adr_midpoints)) +
+                    (max(adr_midpoints) - min(stock_midpoints))) / 2
+    adr_avg = sum(adr_midpoints) / len(adr_midpoints)
+    stock_avg = sum(stock_midpoints) / len(stock_midpoints)
+
+    threshold = largest_diff * .3
+
+    print(str(adr_midpoints))
+    print(str(adr_bids))
+    print(str(largest_diff))
+
+    print("threshold " + str(threshold))
+    print("adr best bid " + str(adr_bids[-1][0]))
+    print("adr best ask " + str(adr_asks[-1][0]))
+    print("stock avg " + str(stock_avg))
+
+    if adr_bids[-1][0] - stock_avg > threshold:
+        # place market sell order
+
+        print("PLACING MARKET SELL ORDER ADR")
+
         id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "SELL", "price": (1000 + random.randint(1,6)), "size": 10})
+        conn.write_to_exchange(
+            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": 4})
+        conn.read_from_exchange()
+
+        return True
+
+    if stock_avg - adr_asks[-1][0] > threshold:
+        # place market buy order
+
+        print("PLACING MARKET BUY ORDER ADR")
+
+        id += 1
+        conn.write_to_exchange(
+            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": 4})
+        conn.read_from_exchange()
+
+        return True
+
+    return False
+
+
+def bonds(conn, data=None):
+    global id
+    for i in range(0, 5):
+        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
+                             "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
+        print(resp)
+        id += 1
+        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
+                             "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
+        print(resp)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
-last_prices = {   
-    "BOND": {"best_bid": [], "best_ask": []}, 
-    "VALBZ": {"best_bid": [], "best_ask": []}, 
+
+last_prices = {
+    "BOND": {"best_bid": [], "best_ask": []},
+    "VALBZ": {"best_bid": [], "best_ask": []},
     "VALE": {"best_bid": [], "best_ask": []},
     "GS": {"best_bid": [], "best_ask": []}, "MS": {"best_bid": [], "best_ask": []}, "WFC": {"best_bid": [], "best_ask": []}, "XLF": {"best_bid": [], "best_ask": []}
 }
 last_n = 15
+
 
 def _update_price_bid(price, symbol, lst):
     if len(lst) >= last_n:
@@ -110,16 +173,18 @@ def _update_price_bid(price, symbol, lst):
     lst.append(price)
     last_prices[symbol]["best_bid"] = lst
 
+
 def _update_price_ask(price, symbol, lst):
     if len(lst) >= last_n:
         lst.pop(0)
     lst.append(price)
     last_prices[symbol]["best_ask"] = lst
 
+
 def update_price(conn, data):
     print(data)
     symbol = data['symbol']
-    bid = last_prices[symbol]['best_bid'] 
+    bid = last_prices[symbol]['best_bid']
     ask = last_prices[symbol]['best_ask']
     if len(data["buy"]) > 0:
         _update_price_bid(data["buy"][0], symbol, bid)
@@ -167,16 +232,18 @@ def etf(conn, data):
             for key in composition:
                 conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], compositon[key])
 
+
 def main():
-    fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
-                   "GS": 0, "MS": 0, "WFC": 0, "XLF": 0}
     conn = Connection(exchange_hostname)
+
+    adr_iter = 0
 
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
+        adr_iter += 1
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
@@ -185,6 +252,16 @@ def main():
                 update_price(conn, data)
                 bonds(conn, data)
                 #etf(conn, data)
+
+            if len(last_prices["VALE"]["best_bid"]) > 1 and len(last_prices["VALBZ"]["best_bid"]) > 10 and adr_iter > 0:
+                print("--------------")
+                print()
+                print("CALLED ADR")
+                print()
+                print("--------------")
+                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+                    adr_iter = -20
+
         except Exception as e:
             print("bonds didnt work")
             print(e)
