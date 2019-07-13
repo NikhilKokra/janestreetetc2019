@@ -92,13 +92,14 @@ def main():
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
+        data = conn.read_from_exchange()
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
 
         try:
-            bonds(conn)
+            bonds(data, conn)
         except Exception as e:
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
