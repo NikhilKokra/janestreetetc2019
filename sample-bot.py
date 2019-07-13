@@ -37,7 +37,6 @@ class Connection(object):
         self.hostname = hostname
         self.exchange = self.connect()
 
-
     def connect(self):
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
@@ -46,11 +45,9 @@ class Connection(object):
         self.write_to_exchange(obj)
         return self.read_from_exchange()
 
-
     def write_to_exchange(self, obj):
         json.dump(obj, self.exchange)
         self.exchange.write("\n")
-
 
     def read_from_exchange(self):
         return json.loads(self.exchange.readline())
@@ -78,7 +75,8 @@ def read_from_exchange(exchange):
 
 def main():
     conn = Connection(exchange_hostname)
-    print(conn.request({"type": "hello", "team": team_name.upper()}))
+    while True:
+        print(conn.read_from_exchange())
     # A common mistake people make is to call write_to_exchange() > 1
     # time for every read_from_exchange() response.
     # Since many write messages generate marketdata, this will cause an
