@@ -225,17 +225,15 @@ def main():
         
         try:
             data = conn.read_process()
-            etf(conn, data)
-            """
-            if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
-                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+            #etf(conn, data)
+            if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
+                if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
                     print("------------------")
                     print("------------------")
                     print("DID ADR ARBITRAGE")
                     print("------------------")
                     print("------------------")
 
-            """
         except Exception as e:
             print("bonds didnt work")
             print(e)
