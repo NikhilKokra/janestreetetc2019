@@ -48,7 +48,10 @@ class Connection(object):
         self.id = 0
         self.exchange = self.connect()
         self.holdings = self.hello()
-        print(self.holdings)
+        self.positions = {}
+        for obj in self.holdings['symbols']:
+            self.positions[obj["symbol"]] = obj["position"]
+        print(self.positions)
 
     def connect(self):
         self.s.connect((self.hostname, port))
