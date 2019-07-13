@@ -13,7 +13,8 @@ import json
 import time
 import os
 import random
-import pprint
+import signal
+
 
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
@@ -35,6 +36,11 @@ prod_exchange_hostname = "production"
 port = 25000 + (test_exchange_index if test_mode else 0)
 exchange_hostname = "test-exch-" + \
     team_name if test_mode else prod_exchange_hostname
+
+
+# unrealized_portfolio = {"BOND": [], "VALBZ": [],
+#                         "VALE": [], "GS": [], "MS": [], "WFC": [], "XLF": []}
+pending_bond_orders = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
@@ -70,14 +76,15 @@ class Connection(object):
 
     def convert(self, symbol, side, size):
         print("CONVERTING %s %s %s" % (symbol, side, size))
-        req = self.request({"type": "convert", "order_id": self.id, "symbol": symbol, "dir": side, "size": size})
+        req = self.request({"type": "convert", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "size": size})
         self.id += 1
         return req
 
-
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
-        req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        req = self.request({"type": "add", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
         return req
 
@@ -109,11 +116,11 @@ def bonds(conn, data=None):
     global id
     resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                          "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-    #print(resp)
+    # print(resp)
     id += 1
     resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                          "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-    #print(resp)
+    # print(resp)
     id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -125,7 +132,25 @@ last_prices = {
     "VALE": {"best_bid": None, "best_ask": None},
     "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
 }
-last_n = 1
+last_n = 15
+
+
+def _handle_resp(req, resp):
+    print(resp)
+    if resp['type'] == 'ack':
+        if req['dir'] == 'BUY':
+            pending_bond_orders[req['order_id']] = [req['price'], req['size']]
+        elif req['dir'] == 'SELL':
+            pending_bond_orders[req['order_id']] = [req['price'], req['size']]
+
+
+def _update_bond_orders(resp):
+    if resp['symbol'] == 'BOND':
+        if resp['type'] == 'fill':
+            pending_bond_orders[resp['order_id']] -= resp['size']
+        elif resp['type'] == 'out':
+            del pending_bond_orders[resp['order_id']]
+    print(resp)
 
 
 def update_price(conn, data):
@@ -135,24 +160,27 @@ def update_price(conn, data):
     if len(data["sell"]) > 0:
         last_prices[symbol]["best_ask"] = data["sell"][0]
 
+
 composition = {
     "BOND": 3,
-    "GS": 2, 
+    "GS": 2,
     "MS": 3,
     "WFC": 2
 }
 
 conversion_fee = 100
-#condition: add up all composing < 10*xlf
+# condition: add up all composing < 10*xlf
+
 
 def etf(conn, data):
     sellingPriceComposed = 0
     buyingPriceComposed = 0
     for key in [key for key in composition] + ["XLF"]:
         if last_prices[key]['best_bid'] is None:
-            return 
+            return
     for key in composition:
-        sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][0]
+        sellingPriceComposed += composition[key] * \
+            last_prices[key]['best_bid'][0]
         buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][0]
     buyingXLF = last_prices["XLF"]['best_ask']
     sellingXLF = last_prices["XLF"]['best_bid']
@@ -162,23 +190,27 @@ def etf(conn, data):
     if buyingPriceComposed + conversion_fee < 10*sellingPriceXLF:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_ask'][1]//composition[ticker], min_converts)
+            min_converts = min(
+                last_prices[ticker]['best_ask'][1]//composition[ticker], min_converts)
         min_converts = min(sellingXLF[1], min_converts)
         for i in range(min_converts):
             for key in composition:
-                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][0], composition[key])
+                conn.add_ticker(
+                    key, "BUY", last_prices[key]['best_ask'][0], composition[key])
             conn.convert("XLF", "BUY", 10)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
     elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_bid'][1]//composition[ticker], min_converts)
+            min_converts = min(
+                last_prices[ticker]['best_bid'][1]//composition[ticker], min_converts)
         min_converts = min(buyingXLF[1], min_converts)
         for i in range(min_converts):
             conn.add_ticker("XLF", "BUY", buyingXLF[0], 10)
             conn.convert("XLF", "SELL", 10)
             for key in composition:
-                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][0], composition[key])
+                conn.add_ticker(
+                    key, "SELL", last_prices[key]['best_bid'][0], composition[key])
 
 
 def main():
@@ -190,6 +222,7 @@ def main():
         # exponential explosion in pending messages. Please, don't do that!
         try:
             data = conn.read_from_exchange()
+            _update_bond_orders(data)
             print("---DATA---")
             print(data)
             if data['type'] == 'book':
@@ -206,12 +239,10 @@ def main():
                     print("------------------")
             """
 
-
         except Exception as e:
             print("bonds didnt work")
             print(e)
             sys.exit(1)
-
 
 
 if __name__ == "__main__":
