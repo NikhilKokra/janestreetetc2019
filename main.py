@@ -98,6 +98,7 @@ def main():
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
 
+        print(data)
         try:
             bonds(conn)
         except Exception as e:
