@@ -86,6 +86,9 @@ class Connection(object):
 
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
+        if symbol == "BOND":
+            _add_unacked_bond({"type": "add", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "price": price, "size": size})
         req = self.request({"type": "add", "order_id": self.id,
                             "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
@@ -115,22 +118,28 @@ def adr(conn, valbz, vale):
     return False
 
 
-def bonds(conn, data=None):
-    global id
-    req = {"type": "add", "order_id": id, "symbol": "BOND",
-           "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10}
-    _add_unacked_bond(req)
-    conn.request(req)
-    id += 1
-    req = {"type": "add", "order_id": id, "symbol": "BOND",
-           "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10}
-    not_acked_bonds[req['order_id']] = [req['price'], req['size']]
-    _add_unacked_bond(req)
-    conn.request(req)
-    id += 1
+def bonds_helper(conn, price, target, bond_orders_d, target_order):
+    if price not in bond_orders_d:
+        conn.add_ticker("BOND", target_order, price, target)
+    elif bond_orders_d[price] < target:
+        conn.add_ticker("BOND", target_order, price, target - bond_orders_d[price])
+
+def bonds(conn):
+    bond_orders = pending_bond_orders.values()
+    bond_orders_d = dict([(a, b) for [a, b] in bond_orders])
+
+    bonds_helper(conn, 995, 30, bond_orders_d, "BUY")
+    bonds_helper(conn, 996, 25, bond_orders_d, "BUY")
+    bonds_helper(conn, 997, 20, bond_orders_d, "BUY")
+    bonds_helper(conn, 998, 15, bond_orders_d, "BUY")
+    bonds_helper(conn, 999, 10, bond_orders_d, "BUY")
+    bonds_helper(conn, 1001, 10, bond_orders_d, "SELL")
+    bonds_helper(conn, 1002, 15, bond_orders_d, "SELL")
+    bonds_helper(conn, 1003, 20, bond_orders_d, "SELL")
+    bonds_helper(conn, 1004, 25, bond_orders_d, "SELL")
+    bonds_helper(conn, 1005, 30, bond_orders_d, "SELL")
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
-
 
 last_prices = {
     "BOND": {"best_bid": None, "best_ask": None},
@@ -140,22 +149,8 @@ last_prices = {
 }
 last_n = 15
 
-
-# def _handle_bond_resp(req, resp):
-#     print(resp)
-#     if resp['type'] == 'ack':
-#         if req['dir'] == 'BUY':
-#             pending_bond_orders[req['order_id']] = [req['price'], req['size']]
-#         elif req['dir'] == 'SELL':
-#             pending_bond_orders[req['order_id']] = [
-#                 req['price'], req['size'] * -1]
-
 def _add_unacked_bond(req):
-    if req['dir'] == 'BUY':
-        not_acked_bonds[req['order_id']] = [req['price'], req['size']]
-    elif req['dir'] == 'SELL':
-        not_acked_bonds[req['order_id']] = [req['price'], req['size'] * -1]
-
+    not_acked_bonds[req['order_id']] = [req['price'], req['size']]
 
 def _update_bond_orders(resp):
     if resp['symbol'] == 'BOND':
@@ -164,10 +159,7 @@ def _update_bond_orders(resp):
                                 ] = not_acked_bonds[resp['order_id']]
             del not_acked_bonds[resp['order_id']]
         elif resp['type'] == 'fill':
-            if resp['dir'] == 'BUY':
-                pending_bond_orders[resp['order_id']] -= resp['size']
-            elif resp['dir'] == 'SELL':
-                pending_bond_orders[resp['order_id']] += resp['size']
+            pending_bond_orders[resp['order_id']] -= resp['size']
         elif resp['type'] == 'out':
             del pending_bond_orders[resp['order_id']]
     print(resp)
@@ -247,8 +239,8 @@ def main():
             print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                #bonds(conn, data)
-                etf(conn, data)
+                bonds(conn)
+                #etf(conn, data)
             """
             if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
