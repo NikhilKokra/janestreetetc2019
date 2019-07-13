@@ -116,13 +116,15 @@ def adr(conn, valbz, vale):
 
 def bonds(conn, data=None):
     global id
-    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                         "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-    _handle_bond_resp(resp)
+    req = {"type": "add", "order_id": id, "symbol": "BOND",
+           "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10}
+    resp = conn.request(req, resp)
+    _handle_bond_resp(req, resp)
     id += 1
-    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                         "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-    _handle_bond_resp(resp)
+    req = {"type": "add", "order_id": id, "symbol": "BOND",
+           "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10}
+    resp = conn.request(req)
+    _handle_bond_resp(req, resp)
     id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
