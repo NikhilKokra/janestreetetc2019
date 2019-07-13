@@ -47,10 +47,14 @@ class Connection(object):
         self.hostname = hostname
         self.id = 0
         self.exchange = self.connect()
+        self.holdings = self.hello()
 
     def connect(self):
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
+
+    def hello(self):
+        return self.request({"type": "hello", "team": team_name.upper()})
 
     def request(self, obj):
         self.write_to_exchange(obj)
@@ -66,9 +70,18 @@ class Connection(object):
             raise Exception("Server returned error: %s" % data["error"])
         return data
 
-    def add_ticker(self, symbol, side, price, size):
+    def convert(self, symbol, side, size):
+        print("CONVERTING %s %s %s" % (symbol, side, size))
+        req = self.request({"type": "convert", "order_id": self.id, "symbol": symbol, "dir": side, "size": size})
         self.id += 1
-        return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        return req
+
+
+    def add_ticker(self, symbol, side, price, size):
+        print("%s %s $%s, %s shares" % (symbol, side, price, size))
+        req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        self.id += 1
+        return req
 
 
 def adr(conn, valbz, vale):
@@ -169,25 +182,59 @@ def _update_price_ask(price, symbol, lst):
 
 
 def update_price(conn, data):
+    print(data)
     symbol = data['symbol']
     bid = last_prices[symbol]['best_bid']
     ask = last_prices[symbol]['best_ask']
     if len(data["buy"]) > 0:
-        _update_price_bid(data["buy"][-1], symbol, bid)
+        _update_price_bid(data["buy"][0], symbol, bid)
     if len(data["sell"]) > 0:
         _update_price_ask(data["sell"][0], symbol, bid)
 
+composition = {
+    "BOND": 3,
+    "GS": 2, 
+    "MS": 3,
+    "WFC": 2
+}
+
+conversion_fee = 100
+#condition: add up all composing < 10*xlf
 
 def etf(conn, data):
-    print(data)
+    sellingPriceComposed = 0
+    buyingPriceComposed = 0
+    for key in composition:
+        sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][-1][0]
+        buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][-1][0]
+    buyingXLF = last_prices["XLF"]['best_ask'][-1]
+    sellingXLF = last_prices["XLF"]['best_bid'][-1]
+    buyingPriceXLF = buyingXLF[0]
+    sellingPriceXLF = sellingXLF[0]
+    if buyingPriceComposed + conversion_fee < 10*sellingPriceXLF:
+        min_converts = 1000000000000000000000000000000
+        for ticker in composition:
+            min_converts = min(last_prices[ticker]['best_ask'][-1][1]//composition[ticker], min_converts)
+        min_converts = min(sellingXLF[1], min_converts)
+        for i in range(min_converts):
+            for key in composition:
+                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], compositon[key])
+            conn.convert("XLF", "BUY", 1)
+            conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
+    else if 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
+        min_converts = 1000000000000000000000000000000
+        for ticker in composition:
+            min_converts = min(last_prices[ticker]['best_bid'][-1][1]//composition[ticker], min_converts)
+        min_converts = min(buyingXLF[1], min_converts)
+        for i in range(min_converts):
+            conn.add_ticker("XLF", "BUY", buyingXLF[0], 1)
+            conn.convert("XLF", "SELL", 1)
+            for key in composition:
+                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], compositon[key])
 
 
 def main():
     conn = Connection(exchange_hostname)
-    conn.write_to_exchange(
-        {"type": "hello", "team": team_name.upper()})
-    hello_from_exchange = conn.read_from_exchange()
-    print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     adr_iter = 0
 
@@ -204,7 +251,7 @@ def main():
             if data['type'] == 'book':
                 update_price(conn, data)
                 bonds(conn, data)
-                etf(conn, data)
+                #etf(conn, data)
 
             if len(last_prices["VALE"]["best_bid"]) > 1 and len(last_prices["VALBZ"]["best_bid"]) > 10 and adr_iter > 0:
                 print("--------------")
