@@ -76,8 +76,8 @@ def adr(conn, valbz, vale):
     adr_bids = vale['best_bid'][:5]
     adr_asks = vale['best_ask'][:5]
 
-    stock_bids = valbz['best_bid']
-    stock_asks = valbz['best_ask']
+    stock_bids = valbz['best_bid'][:5]
+    stock_asks = valbz['best_ask'][:5]
 
     adr_midpoints = []
     for i in range(len(adr_bids)):
