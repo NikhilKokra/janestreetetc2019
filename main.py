@@ -30,7 +30,7 @@ if not test_mode:
 # 0 is prod-like
 # 1 is slower
 # 2 is empty
-test_exchange_index = 2
+test_exchange_index = 1
 prod_exchange_hostname = "production"
 
 port = 25000 + (test_exchange_index if test_mode else 0)
@@ -82,6 +82,10 @@ def bonds(conn, data = None):
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
+def etf(conn, data):
+    print(data)
+
+
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
                    "GS": 0, "MS": 0, "WFC": 0, "XLF": 0}
@@ -92,15 +96,15 @@ def main():
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
-        data = conn.read_from_exchange()
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
-
-        print(data)
         try:
-            bonds(conn)
+            data = conn.read_from_exchange()
+            if data['type'] == 'book':
+                bonds(conn, data)
+                etf(conn, data)
         except Exception as e:
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
