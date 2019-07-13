@@ -114,19 +114,22 @@ def adr(conn, valbz, vale):
         return True
     return False
 
+def bonds_helper(conn, price, target, bond_orders_d, target_order):
+    if price not in bond_orders_d:
+        _handle_bond_resp(conn.add_ticker("BOND", target_order, price, target))
+    elif bond_orders_d[price] < target:
+        _handle_bond_resp(conn.add_ticker("BOND", target_order, price, target - bond_orders_d[price]))
 
-def bonds(conn, data=None):
-    global id
-    req = {"type": "add", "order_id": id, "symbol": "BOND",
-           "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10}
-    resp = conn.request(req, resp)
-    _handle_bond_resp(req, resp)
-    id += 1
-    req = {"type": "add", "order_id": id, "symbol": "BOND",
-           "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10}
-    resp = conn.request(req)
-    _handle_bond_resp(req, resp)
-    id += 1
+def bonds(conn):
+    bond_orders = pending_bond_orders.values()
+    bond_orders_d = dict([(a, b) for [a, b] in bond_orders])
+
+    bonds_helper(conn, 997, 43, bond_orders_d, "BUY")
+    bonds_helper(conn, 998, 33, bond_orders_d, "BUY")
+    bonds_helper(conn, 999, 23, bond_orders_d, "BUY")
+    bonds_helper(conn, 1001, 23, bond_orders_d, "SELL")
+    bonds_helper(conn, 1002, 33, bond_orders_d, "SELL")
+    bonds_helper(conn, 1003, 43, bond_orders_d, "SELL")
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
@@ -161,9 +164,9 @@ def _update_bond_orders(resp):
                     req['price'], req['size'] * -1]
         elif resp['type'] == 'fill':
             if resp['dir'] == 'BUY':
-                pending_bond_orders[resp['order_id']] -= resp['size']
+                pending_bond_orders[resp['order_id']][1] -= resp['size']
             elif resp['dir'] == 'SELL':
-                pending_bond_orders[resp['order_id']] += resp['size']
+                pending_bond_orders[resp['order_id']][1] += resp['size']
         elif resp['type'] == 'out':
             del pending_bond_orders[resp['order_id']]
     print(resp)
@@ -243,9 +246,9 @@ def main():
             print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                #bonds(conn, data)
-                etf(conn, data)
-            """
+                bonds(conn)
+                #etf(conn, data)
+
             if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     print("------------------")
@@ -253,7 +256,7 @@ def main():
                     print("DID ADR ARBITRAGE")
                     print("------------------")
                     print("------------------")
-            """
+
 
         except Exception as e:
             print(e)
