@@ -59,6 +59,7 @@ class Connection(object):
         self.holdings = self.hello()
         self.positions = {}
         self.open = {}
+        self.reverse = {}
         self.book = {
     "BOND": {"best_bid": None, "best_ask": None},
     "VALBZ": {"best_bid": None, "best_ask": None},
@@ -106,7 +107,7 @@ class Connection(object):
             self.positions[data['USD']] -= c*data['size']*data['price']
             del self.open[data['symbol']]
         elif data['type'] == 'ack':
-            self.open[data['symbol']] = data['order_id']
+            self.open[self.reverse[data['order_id']]] = data['order_id']
         return data
 
     def convert(self, symbol, side, size):
@@ -118,6 +119,7 @@ class Connection(object):
 
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
+        self.reverse[self.id] = symbol
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
         return req
