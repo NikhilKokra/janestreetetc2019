@@ -12,6 +12,7 @@ import socket
 import json
 import time
 import os
+import random
 
 id = 0
 
@@ -35,6 +36,8 @@ prod_exchange_hostname = "production"
 port = 25000 + (test_exchange_index if test_mode else 0)
 exchange_hostname = "test-exch-" + \
     team_name if test_mode else prod_exchange_hostname
+
+bonds = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
@@ -68,12 +71,13 @@ class Connection(object):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
-def bonds(conn, data):
+def bonds(conn, data = None):
+    global id
     i = 0
-    for i in range(0, 10):
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
+    for i in range(0, 5):
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": (1000 - random.randint(1,6)), "size": 10})
         id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "SELL", "price": (1000 + random.randint(1,6)), "size": 10})
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
