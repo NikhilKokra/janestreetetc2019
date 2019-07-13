@@ -199,31 +199,30 @@ def main():
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
-        #try:
-        data = conn.read_from_exchange()
-        print("---DATA---")
-        print(data)
-        if data['type'] == 'book':
-            update_price(conn, data)
-            #bonds(conn, data)
-            etf(conn, data)
-        """
-        if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
-            if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
-                print("------------------")
-                print("------------------")
-                print("DID ADR ARBITRAGE")
-                print("------------------")
-                print("------------------")
-        """
+        try:
+            data = conn.read_from_exchange()
+            print("---DATA---")
+            print(data)
+            if data['type'] == 'book':
+                update_price(conn, data)
+                #bonds(conn, data)
+                etf(conn, data)
+            """
+            if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
+                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+                    print("------------------")
+                    print("------------------")
+                    print("DID ADR ARBITRAGE")
+                    print("------------------")
+                    print("------------------")
+            """
 
 
-        #except Exception as e:
-            #print("bonds didnt work")
-            #print(e)
-            #sys.exit(1)
+        except Exception as e:
+            print("bonds didnt work")
+            print(e)
+            sys.exit(1)
 
-        time.sleep(.5)
 
 
 if __name__ == "__main__":
