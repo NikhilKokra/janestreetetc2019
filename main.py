@@ -42,6 +42,15 @@ exchange_hostname = "test-exch-" + \
 
 
 class Connection(object):
+    limits = {
+        'BOND': 100,
+        "VALBZ": 10,
+        "VALE":	10,
+        "GS": 100,
+        "MS": 100,
+        "WFC": 100,
+        "XLF": 100
+    }
     def __init__(self, hostname,):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.hostname = hostname
@@ -49,9 +58,9 @@ class Connection(object):
         self.exchange = self.connect()
         self.holdings = self.hello()
         self.positions = {}
+        self.open_orders = []
         for obj in self.holdings['symbols']:
             self.positions[obj["symbol"]] = obj["position"]
-        print(self.positions)
 
     def connect(self):
         self.s.connect((self.hostname, port))
@@ -84,6 +93,8 @@ class Connection(object):
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        filled = self.read_from_exchange()
+        print(filled)
         self.id += 1
         return req
 
@@ -198,12 +209,14 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
+    conn.add_ticker("XLF", "BUY", 1, 1)
+    """
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
-        """
+        
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
