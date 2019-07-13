@@ -113,7 +113,7 @@ def update_price(conn, data):
         _update_price_ask(data["sell"][0], symbol, bid)
 
 def etf(conn, data):
-    print(last_prices)
+    print(data)
 
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
