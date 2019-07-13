@@ -219,7 +219,7 @@ def etf(conn, data):
                 conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], compositon[key])
             conn.convert("XLF", "BUY", 1)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
-    else if 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
+    elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
             min_converts = min(last_prices[ticker]['best_bid'][-1][1]//composition[ticker], min_converts)
