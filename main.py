@@ -225,6 +225,7 @@ def main():
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
         
+        #try:
         data = conn.read_process()
         #etf(conn, data)
         if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
@@ -234,8 +235,12 @@ def main():
                 print("DID ADR ARBITRAGE")
                 print("------------------")
                 print("------------------")
-
-        
+        """
+        except Exception as e:
+            print("bonds didnt work")
+            print(e)
+            sys.exit(1)
+        """
 
 
 
