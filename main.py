@@ -71,6 +71,52 @@ class Connection(object):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
+def adr(conn, valbz, vale):
+    global id
+    adr_bids = vale['bids']
+    adr_asks = vale['asks']
+
+    stock_bids = valbz['bids']
+    stock_asks = valbz['asks']
+
+    adr_midpoints = []
+    for i in range(len(adr_bids)):
+        adr_midpoints += [(adr_asks[i] + adr_bids[i]) / 2]
+
+    stock_midpoints = []
+    for i in range(len(stock_bids)):
+        stock_midpoints += [(stock_asks[i] + stock_bids[i]) / 2]
+
+    largest_diff = ((max(stock_midpoints) - min(adr_midpoints)) + (max(adr_midpoints) - min(stock_midpoints))) / 2
+    adr_avg = sum(adr_midpoints) / len(adr_midpoints)
+    stock_avg = sum(stock_midpoints) / len(stock_midpoints)
+
+    threshold = largest_diff * .1
+
+    if adr_bids[-1] - stock_avg > threshold:
+        #place market sell order
+
+        print("PLACING MARKET SELL ORDER ADR")
+
+        for _ in range(10):
+            id += 1
+            conn.write_to_exchange(
+                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1],"size": 1})
+
+    if stock_avg - adr_asks[-1] > threshold:
+        #place market buy order
+
+        print("PLACING MARKET BUY ORDER ADR")
+
+        for _ in range(10):
+            id += 1
+            conn.write_to_exchange(
+                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1],"size": 1})
+
+
+
+
+
 def bonds(conn, data = None):
     global id
     i = 0
@@ -102,6 +148,7 @@ def main():
         try:
             bonds(conn)
         except Exception as e:
+
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
             print(e)
