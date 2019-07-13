@@ -182,7 +182,6 @@ def _update_price_ask(price, symbol, lst):
 
 
 def update_price(conn, data):
-    print(data)
     symbol = data['symbol']
     bid = last_prices[symbol]['best_bid']
     ask = last_prices[symbol]['best_ask']
@@ -222,7 +221,7 @@ def etf(conn, data):
         for i in range(min_converts):
             for key in composition:
                 conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], composition[key])
-            conn.convert("XLF", "BUY", 1)
+            conn.convert("XLF", "BUY", 10)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
     elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
         min_converts = 1000000000000000000000000000000
@@ -230,8 +229,8 @@ def etf(conn, data):
             min_converts = min(last_prices[ticker]['best_bid'][-1][1]//composition[ticker], min_converts)
         min_converts = min(buyingXLF[1], min_converts)
         for i in range(min_converts):
-            conn.add_ticker("XLF", "BUY", buyingXLF[0], 1)
-            conn.convert("XLF", "SELL", 1)
+            conn.add_ticker("XLF", "BUY", buyingXLF[0], 10)
+            conn.convert("XLF", "SELL", 10)
             for key in composition:
                 conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], composition[key])
 
