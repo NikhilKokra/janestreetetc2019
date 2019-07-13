@@ -85,11 +85,12 @@ def read_from_exchange(exchange):
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
                    "GS": 0, "MS": 0, "WFC": 0, "XLF": 0}
+    connection = Connection(exchange_hostname)
     while True:
-        exchange = connect()
-        write_to_exchange(
-            exchange, {"type": "hello", "team": team_name.upper()})
-        hello_from_exchange = read_from_exchange(exchange)
+        exchange = connection.connect()
+        connection.write_to_exchange(
+            {"type": "hello", "team": team_name.upper()})
+        hello_from_exchange = connection.read_from_exchange()
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
