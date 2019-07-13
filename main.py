@@ -104,7 +104,7 @@ class Connection(object):
             if data['dir'] == "BUY":
                 c = 1
             self.positions[data['symbol']] += c*data['size']
-            self.positions[data['USD']] -= c*data['size']*data['price']
+            self.positions['USD'] -= c*data['size']*data['price']
         return data
 
     def convert(self, symbol, side, size):
