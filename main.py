@@ -205,9 +205,9 @@ def main():
         print(data)
         if data['type'] == 'book':
             update_price(conn, data)
-            bonds(conn, data)
+            #bonds(conn, data)
             etf(conn, data)
-
+        """
         if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
             if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                 print("------------------")
@@ -215,6 +215,7 @@ def main():
                 print("DID ADR ARBITRAGE")
                 print("------------------")
                 print("------------------")
+        """
 
 
         #except Exception as e:
