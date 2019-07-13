@@ -81,11 +81,11 @@ def adr(conn, valbz, vale):
 
     adr_midpoints = []
     for i in range(len(adr_bids)):
-        adr_midpoints += [(adr_asks[i] + adr_bids[i]) / 2]
+        adr_midpoints += [(adr_asks[i][0] + adr_bids[i][0]) / 2]
 
     stock_midpoints = []
     for i in range(len(stock_bids)):
-        stock_midpoints += [(stock_asks[i] + stock_bids[i]) / 2]
+        stock_midpoints += [(stock_asks[i][0] + stock_bids[i][0]) / 2]
 
     largest_diff = ((max(stock_midpoints) - min(adr_midpoints)) +
                     (max(adr_midpoints) - min(stock_midpoints))) / 2
@@ -99,11 +99,11 @@ def adr(conn, valbz, vale):
     print(str(largest_diff))
 
     print("threshold " + str(threshold))
-    print("adr best bid " + str(adr_bids[-1]))
-    print("adr best ask " + str(adr_asks[-1]))
+    print("adr best bid " + str(adr_bids[-1][0]))
+    print("adr best ask " + str(adr_asks[-1][0]))
     print("stock avg " + str(stock_avg))
 
-    if adr_bids[-1] - stock_avg > threshold:
+    if adr_bids[-1][0] - stock_avg > threshold:
         # place market sell order
 
         print("PLACING MARKET SELL ORDER ADR")
@@ -111,9 +111,9 @@ def adr(conn, valbz, vale):
         for _ in range(10):
             id += 1
             conn.write_to_exchange(
-                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1], "size": 1})
+                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": 1})
 
-    if stock_avg - adr_asks[-1] > threshold:
+    if stock_avg - adr_asks[-1][0] > threshold:
         # place market buy order
 
         print("PLACING MARKET BUY ORDER ADR")
@@ -121,7 +121,7 @@ def adr(conn, valbz, vale):
         for _ in range(10):
             id += 1
             conn.write_to_exchange(
-                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1], "size": 1})
+                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": 1})
 
 
 def bonds(conn, data=None):
