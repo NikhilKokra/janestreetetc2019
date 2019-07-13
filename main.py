@@ -13,6 +13,8 @@ import json
 import time
 import os
 
+id = 0
+
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
 team_name = "cablecar"
@@ -66,13 +68,13 @@ class Connection(object):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
-def bonds(data, conn):
+def bonds(conn, data):
     i = 0
     for i in range(0, 10):
-        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
-        i += 1
-        conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
-        i += 1
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
+        id += 1
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
+        id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
@@ -95,6 +97,7 @@ def main():
         try:
             bonds(data, conn)
         except Exception as e:
+            conn = Connection(exchange_hostname)
             print("bonds didnt work")
             print(e)
 
