@@ -134,10 +134,6 @@ def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
                    "GS": 0, "MS": 0, "WFC": 0, "XLF": 0}
     conn = Connection(exchange_hostname)
-    conn.write_to_exchange(
-        {"type": "hello", "team": team_name.upper()})
-    hello_from_exchange = conn.read_from_exchange()
-    print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
