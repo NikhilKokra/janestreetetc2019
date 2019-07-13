@@ -63,20 +63,29 @@ class Connection(object):
         if data["type"] == "error":
             raise Exception("Server returned error: %s" % data["error"])
         return data
-    
+
     def add_ticker(self, symbol, side, price, size):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
+
 def bonds(conn, data):
-    i = 0
     for i in range(0, 10):
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
+        conn.write_to_exchange({"type": "add", "order_id": id,
+                                "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
+        resp1 = conn.read_from_exchange()
+        print("BUY RESPONSE")
+        print(resp1)
         id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
+        conn.write_to_exchange({"type": "add", "order_id": id,
+                                "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 10})
+        print("SELL RESPONSE")
+        resp2 = conn.read_from_exchange()
+        print(resp2)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
+
 
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
@@ -89,6 +98,8 @@ def main():
 
     while True:
         data = conn.read_from_exchange()
+        print("---DATA---")
+        print(data)
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
@@ -104,8 +115,5 @@ def main():
         time.sleep(.5)
 
 
-
 if __name__ == "__main__":
     main()
-
-
