@@ -93,6 +93,7 @@ class Connection(object):
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        print(req)
         filled = self.read_from_exchange()
         print(filled)
         self.id += 1
