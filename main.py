@@ -89,8 +89,8 @@ def adr(conn, valbz, vale):
     adr_bids = vale['best_bid']
     adr_asks = vale['best_ask']
 
-    stock_bids = valbz['best_bid']
-    stock_asks = valbz['best_ask']
+    stock_bids = [valbz['best_bid']]
+    stock_asks = [valbz['best_ask']]
 
     adr_midpoints = []
     for i in range(len(adr_bids)):
@@ -157,36 +157,20 @@ def bonds(conn, data=None):
 
 
 last_prices = {
-    "BOND": {"best_bid": [], "best_ask": []},
-    "VALBZ": {"best_bid": [], "best_ask": []},
-    "VALE": {"best_bid": [], "best_ask": []},
-    "GS": {"best_bid": [], "best_ask": []}, "MS": {"best_bid": [], "best_ask": []}, "WFC": {"best_bid": [], "best_ask": []}, "XLF": {"best_bid": [], "best_ask": []}
+    "BOND": {"best_bid": None, "best_ask": None},
+    "VALBZ": {"best_bid": None, "best_ask": None},
+    "VALE": {"best_bid": None, "best_ask": None},
+    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": [], "best_ask": []}
 }
-last_n = 15
-
-
-def _update_price_bid(price, symbol, lst):
-    if len(lst) >= last_n:
-        lst.pop(0)
-    lst.append(price)
-    last_prices[symbol]["best_bid"] = lst
-
-
-def _update_price_ask(price, symbol, lst):
-    if len(lst) >= last_n:
-        lst.pop(0)
-    lst.append(price)
-    last_prices[symbol]["best_ask"] = lst
+last_n = 1
 
 
 def update_price(conn, data):
     symbol = data['symbol']
-    bid = last_prices[symbol]['best_bid']
-    ask = last_prices[symbol]['best_ask']
     if len(data["buy"]) > 0:
-        _update_price_bid(data["buy"][0], symbol, bid)
+        last_prices[symbol]["best_bid"] = data["buy"][0]
     if len(data["sell"]) > 0:
-        _update_price_ask(data["sell"][0], symbol, bid)
+        last_prices[symbol]["best_ask"] = data["sell"][0]
 
 composition = {
     "BOND": 3,
@@ -202,35 +186,35 @@ def etf(conn, data):
     sellingPriceComposed = 0
     buyingPriceComposed = 0
     for key in [key for key in composition] + ["XLF"]:
-        if len(last_prices[key]['best_bid']) <= 0:
+        if last_prices[key]['best_bid'] is None:
             return 
     for key in composition:
-        sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][-1][0]
-        buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][-1][0]
-    buyingXLF = last_prices["XLF"]['best_ask'][-1]
-    sellingXLF = last_prices["XLF"]['best_bid'][-1]
+        sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][0]
+        buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][0]
+    buyingXLF = last_prices["XLF"]['best_ask']
+    sellingXLF = last_prices["XLF"]['best_bid']
     buyingPriceXLF = buyingXLF[0]
     sellingPriceXLF = sellingXLF[0]
     if buyingPriceComposed + conversion_fee < 10*sellingPriceXLF:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_ask'][-1][1]//composition[ticker], min_converts)
+            min_converts = min(last_prices[ticker]['best_ask'][1]//composition[ticker], min_converts)
         min_converts = min(sellingXLF[1], min_converts)
         for i in range(min_converts):
             for key in composition:
-                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], composition[key])
+                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][0], composition[key])
             conn.convert("XLF", "BUY", 10)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
     elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_bid'][-1][1]//composition[ticker], min_converts)
+            min_converts = min(last_prices[ticker]['best_bid'][1]//composition[ticker], min_converts)
         min_converts = min(buyingXLF[1], min_converts)
         for i in range(min_converts):
             conn.add_ticker("XLF", "BUY", buyingXLF[0], 10)
             conn.convert("XLF", "SELL", 10)
             for key in composition:
-                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], composition[key])
+                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][0], composition[key])
 
 
 def main():
@@ -249,7 +233,7 @@ def main():
                 bonds(conn, data)
                 etf(conn, data)
 
-            if len(last_prices["VALBZ"]["best_bid"]) > 0 and len(last_prices["VALE"]["best_bid"]) > 0:
+            if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     print("------------------")
                     print("------------------")
