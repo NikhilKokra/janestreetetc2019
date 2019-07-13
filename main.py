@@ -15,8 +15,6 @@ import os
 import random
 import pprint
 
-id = 0
-
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
 team_name = "cablecar"
@@ -85,33 +83,24 @@ class Connection(object):
 
 
 def adr(conn, valbz, vale):
-    global id
-    adr_bids = [vale['best_bid']]
-    adr_asks = [vale['best_ask']]
+    adr_bids = vale['best_bid']
+    adr_asks = vale['best_ask']
 
-    stock_bids = [valbz['best_bid']]
-    stock_asks = [valbz['best_ask']]
+    stock_bids = valbz['best_bid']
+    stock_asks = valbz['best_ask']
 
     #arbitrage opp
-    if adr_bids[-1][0] - stock_asks[-1][0] > 10:
-        print("BUYING STOCK AT " + str(stock_asks[-1][0]) + ", CONVERTING TO ADR AND SELLING ADR AT " + str(adr_bids[-1][0]))
-        id += 1
-        quantity = min(stock_asks[-1][1], adr_bids[-1][1])
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "BUY", "price": stock_asks[-1][0], "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": quantity})
+    if adr_bids[0] - stock_asks[0] > 10:
+        quantity = min(stock_asks[1], adr_bids[1])
+        conn.add_ticker("VALBZ", "BUY", stock_asks[0], quantity)
+        conn.convert("VALBZ", "SELL", quantity)
+        conn.add_ticker("VALE", "SELL", adr_bids[0], quantity)
         return True
-    if stock_bids[-1][0] - adr_asks[-1][0] > 10:
-        print("BUYING ADR AT " + str(adr_asks[-1][0]) + ", CONVERTING TO STOCK AND SELLING STOCK AT " + str(stock_bids[-1][0]))
-        id += 1
-        quantity = min(stock_bids[-1][1], adr_asks[-1][1])
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALE", "dir": "SELL", "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "price": stock_bids[-1][0], "size": quantity})
+    if stock_bids[0] - adr_asks[0] > 10:
+        quantity = min(stock_bids[1], adr_asks[1])
+        conn.add_ticker("VALE", "BUY", adr_asks[0], quantity)
+        conn.convert("VALE", "SELL", quantity)
+        conn.add_ticker("VALBZ", "SELL", stock_bids[0], quantity)
         return True
     return False
 
