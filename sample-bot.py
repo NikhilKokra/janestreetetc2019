@@ -43,36 +43,24 @@ class Connection(object):
         return self.s.makefile('rw', 1)
 
     def request(self, obj):
-        self.write_to_exchange(obj)
-        return self.read_from_exchange()
+        self.write(obj)
+        return self.read()
 
-
-    def write_to_exchange(self, obj):
+    def write(self, obj):
         json.dump(obj, self.exchange)
         self.exchange.write("\n")
 
-
-    def read_from_exchange(self):
+    def read(self):
         return json.loads(self.exchange.readline())
 
-"""
 
-
-def connect():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print(exchange_hostname)
-    s.connect((exchange_hostname, port))
-    return s.makefile('rw', 1)
-
-
-def write_to_exchange(exchange, obj):
-    json.dump(obj, exchange)
-    exchange.write("\n")
-
-
-def read_from_exchange(exchange):
-    return json.loads(exchange.readline())
-"""
+def bonds(conn):
+    i = 0
+    for i in range(0, 20):
+        conn.write({"type": "add", "order_id": i, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 40})
+        i += 1
+        conn.write({"type": "add", "order_id": i, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 40})
+        i += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
@@ -83,7 +71,6 @@ def main():
     # time for every read_from_exchange() response.
     # Since many write messages generate marketdata, this will cause an
     # exponential explosion in pending messages. Please, don't do that!
-
 
 if __name__ == "__main__":
     main()
