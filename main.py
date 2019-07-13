@@ -20,6 +20,9 @@ team_name = "cablecar"
 # or test exchange. Be careful with this switch!
 test_mode = os.environ.get("TYPE") != "production"
 
+if not test_mode:
+    print("running in production.....")
+
 # This setting changes which test exchange is connected to.
 # 0 is prod-like
 # 1 is slower
@@ -81,6 +84,7 @@ def main():
         {"type": "hello", "team": team_name.upper()})
     hello_from_exchange = conn.read_from_exchange()
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
+
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
