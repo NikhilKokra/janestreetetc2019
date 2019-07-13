@@ -193,6 +193,7 @@ def etf(conn, data):
         buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][0]
     buyingXLF = last_prices["XLF"]['best_ask']
     sellingXLF = last_prices["XLF"]['best_bid']
+    print(buyingXLF)
     buyingPriceXLF = buyingXLF[0]
     sellingPriceXLF = sellingXLF[0]
     if buyingPriceComposed + conversion_fee < 10*sellingPriceXLF:
