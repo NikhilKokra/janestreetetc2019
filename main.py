@@ -73,11 +73,11 @@ class Connection(object):
 
 def adr(conn, valbz, vale):
     global id
-    adr_bids = vale['best_bid'][:5]
-    adr_asks = vale['best_ask'][:5]
+    adr_bids = vale['best_bid']
+    adr_asks = vale['best_ask']
 
-    stock_bids = valbz['best_bid'][:5]
-    stock_asks = valbz['best_ask'][:5]
+    stock_bids = valbz['best_bid']
+    stock_asks = valbz['best_ask']
 
     adr_midpoints = []
     for i in range(len(adr_bids)):
@@ -92,7 +92,7 @@ def adr(conn, valbz, vale):
     adr_avg = sum(adr_midpoints) / len(adr_midpoints)
     stock_avg = sum(stock_midpoints) / len(stock_midpoints)
 
-    threshold = largest_diff * .2
+    threshold = largest_diff * .3
 
     print(str(adr_midpoints))
     print(str(adr_bids))
@@ -108,20 +108,26 @@ def adr(conn, valbz, vale):
 
         print("PLACING MARKET SELL ORDER ADR")
 
-        for _ in range(10):
-            id += 1
-            conn.write_to_exchange(
-                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": 1})
+        id += 1
+        conn.write_to_exchange(
+            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": 4})
+        conn.read_from_exchange()
+
+        return True
 
     if stock_avg - adr_asks[-1][0] > threshold:
         # place market buy order
 
         print("PLACING MARKET BUY ORDER ADR")
 
-        for _ in range(10):
-            id += 1
-            conn.write_to_exchange(
-                {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": 1})
+        id += 1
+        conn.write_to_exchange(
+            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": 4})
+        conn.read_from_exchange()
+
+        return True
+
+    return False
 
 
 def bonds(conn, data=None):
@@ -129,11 +135,11 @@ def bonds(conn, data=None):
     for i in range(0, 5):
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        print(resp)
         id += 1
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        print(resp)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -173,7 +179,7 @@ def update_price(conn, data):
 
 
 def etf(conn, data):
-    pprint.pprint(data)
+    print(data)
 
 
 def main():
@@ -183,24 +189,31 @@ def main():
     hello_from_exchange = conn.read_from_exchange()
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
+    adr_iter = 0
+
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
+        adr_iter += 1
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
-            pprint.pprint(data)
+            print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
                 bonds(conn, data)
                 etf(conn, data)
 
-            if len(last_prices["VALE"]["best_bid"]) > 5 and len(last_prices["VALBZ"]["best_bid"]) > 5:
+            if len(last_prices["VALE"]["best_bid"]) > 1 and len(last_prices["VALBZ"]["best_bid"]) > 10 and adr_iter > 0:
+                print("--------------")
+                print()
                 print("CALLED ADR")
-                adr(conn, last_prices["VALBZ"], last_prices["VALE"])
-
+                print()
+                print("--------------")
+                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+                    adr_iter = -20
 
         except Exception as e:
             print("bonds didnt work")
