@@ -68,8 +68,7 @@ class Connection(object):
         self.id += 1
         return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
-def bonds(conn):
-    global id
+def bonds(conn, data):
     i = 0
     for i in range(0, 10):
         conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 10})
@@ -89,13 +88,14 @@ def main():
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
+        data = conn.read_from_exchange()
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
 
         try:
-            bonds(conn)
+            bonds(data, conn)
         except Exception as e:
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
