@@ -84,7 +84,11 @@ def main():
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
 
-        bonds(conn)
+        try:
+            bonds(conn)
+        except Exception as e:
+            print("bonds didnt work")
+            print(e)
 
         print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
