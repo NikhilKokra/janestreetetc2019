@@ -54,7 +54,7 @@ class Connection(object):
     def read_from_exchange(self):
         data = json.loads(self.exchange.readline())
         if data["type"] == "error":
-            raise new Exception("Server returned error: %s" % data["error"])
+            raise Exception("Server returned error: %s" % data["error"])
         return data
     
     def add_ticker(self, symbol, side, price, size):
