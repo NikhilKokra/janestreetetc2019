@@ -116,29 +116,27 @@ def adr(conn, valbz, vale):
     print("adr best ask " + str(adr_asks[-1][0]))
     print("stock avg " + str(stock_avg))
 
-    if adr_bids[-1][0] - stock_avg > threshold:
-        # place market sell order
 
-        print("PLACING MARKET SELL ORDER ADR")
-
+    #arbitrage opp
+    if adr_bids[-1][0] - stock_asks[-1][0] > 10:
+        print("BUYING STOCK CONVERTING TO ADR AND SELLING ADR")
         id += 1
-        conn.write_to_exchange(
-            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": 4})
-        conn.read_from_exchange()
-
-        return True
-
-    if stock_avg - adr_asks[-1][0] > threshold:
-        # place market buy order
-
-        print("PLACING MARKET BUY ORDER ADR")
-
+        quantity = min(stock_asks[-1][1], adr_bids[-1][1])
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "BUY", "price": stock_asks[-1][0], "size": quantity})
         id += 1
-        conn.write_to_exchange(
-            {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": 4})
-        conn.read_from_exchange()
+        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "size": quantity})
+        id += 1
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": quantity})
 
-        return True
+    if stock_bids[-1][0] - adr_asks[-1][0] > 10:
+        print("BUYING ADR CONVERTING TO STOCK AND SELLING STOCK")
+        id += 1
+        quantity = min(stock_bids[-1][1], adr_asks[-1][1])
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": quantity})
+        id += 1
+        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALE", "dir": "SELL", "size": quantity})
+        id += 1
+        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "price": stock_bids[-1][0], "size": quantity})
 
     return False
 
@@ -235,15 +233,11 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
-
-    adr_iter = 0
-
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
-        adr_iter += 1
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
@@ -253,14 +247,13 @@ def main():
                 bonds(conn, data)
                 #etf(conn, data)
 
-            if len(last_prices["VALE"]["best_bid"]) > 1 and len(last_prices["VALBZ"]["best_bid"]) > 10 and adr_iter > 0:
-                print("--------------")
-                print()
-                print("CALLED ADR")
-                print()
-                print("--------------")
-                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
-                    adr_iter = -20
+            if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+                print("------------------")
+                print("------------------")
+                print("DID ADR ARBITRAGE")
+                print("------------------")
+                print("------------------")
+
 
         except Exception as e:
             print("bonds didnt work")
