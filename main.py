@@ -247,12 +247,14 @@ def main():
                 bonds(conn, data)
                 #etf(conn, data)
 
-            if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
-                print("------------------")
-                print("------------------")
-                print("DID ADR ARBITRAGE")
-                print("------------------")
-                print("------------------")
+
+            if len(last_prices["VALBZ"]["best_bid"]) > 0 and len(last_prices["VALE"]["best_bid"]) > 0:
+                if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
+                    print("------------------")
+                    print("------------------")
+                    print("DID ADR ARBITRAGE")
+                    print("------------------")
+                    print("------------------")
 
 
         except Exception as e:
