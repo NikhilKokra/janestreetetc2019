@@ -146,11 +146,11 @@ def bonds(conn, data=None):
     for i in range(0, 5):
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-        print(resp)
+        #print(resp)
         id += 1
         resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
                              "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-        print(resp)
+        #print(resp)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
