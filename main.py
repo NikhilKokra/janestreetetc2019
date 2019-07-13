@@ -204,6 +204,9 @@ conversion_fee = 100
 def etf(conn, data):
     sellingPriceComposed = 0
     buyingPriceComposed = 0
+    for key in [key for key in composition] + ["XLF"]:
+        if len(last_prices[key]['best_bid']) <= 0:
+            return 
     for key in composition:
         sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][-1][0]
         buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][-1][0]
@@ -218,7 +221,7 @@ def etf(conn, data):
         min_converts = min(sellingXLF[1], min_converts)
         for i in range(min_converts):
             for key in composition:
-                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], compositon[key])
+                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][-1][0], composition[key])
             conn.convert("XLF", "BUY", 1)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
     elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
@@ -230,7 +233,7 @@ def etf(conn, data):
             conn.add_ticker("XLF", "BUY", buyingXLF[0], 1)
             conn.convert("XLF", "SELL", 1)
             for key in composition:
-                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], compositon[key])
+                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][-1][0], composition[key])
 
 
 def main():
