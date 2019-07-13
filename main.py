@@ -135,7 +135,7 @@ def main():
             print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                #bonds(conn, data)
+                bonds(conn, data)
                 etf(conn, data)
         except Exception as e:
             print("bonds didnt work")
