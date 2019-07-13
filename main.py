@@ -40,6 +40,7 @@ exchange_hostname = "test-exch-" + \
 
 # unrealized_portfolio = {"BOND": [], "VALBZ": [],
 #                         "VALE": [], "GS": [], "MS": [], "WFC": [], "XLF": []}
+not_acked_bonds = {}
 pending_bond_orders = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
@@ -139,19 +140,26 @@ last_prices = {
 last_n = 15
 
 
-def _handle_bond_resp(req, resp):
-    print(resp)
-    if resp['type'] == 'ack':
-        if req['dir'] == 'BUY':
-            pending_bond_orders[req['order_id']] = [req['price'], req['size']]
-        elif req['dir'] == 'SELL':
-            pending_bond_orders[req['order_id']] = [
-                req['price'], req['size'] * -1]
+# def _handle_bond_resp(req, resp):
+#     print(resp)
+#     if resp['type'] == 'ack':
+#         if req['dir'] == 'BUY':
+#             pending_bond_orders[req['order_id']] = [req['price'], req['size']]
+#         elif req['dir'] == 'SELL':
+#             pending_bond_orders[req['order_id']] = [
+#                 req['price'], req['size'] * -1]
 
 
 def _update_bond_orders(resp):
     if resp['symbol'] == 'BOND':
-        if resp['type'] == 'fill':
+        if resp['type'] == 'ack':
+            if req['dir'] == 'BUY':
+                pending_bond_orders[req['order_id']] = [
+                    req['price'], req['size']]
+            elif req['dir'] == 'SELL':
+                pending_bond_orders[req['order_id']] = [
+                    req['price'], req['size'] * -1]
+        elif resp['type'] == 'fill':
             if resp['dir'] == 'BUY':
                 pending_bond_orders[resp['order_id']] -= resp['size']
             elif resp['dir'] == 'SELL':
@@ -248,9 +256,9 @@ def main():
             """
 
         except Exception as e:
-            print("bonds didnt work")
             print(e)
             sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
