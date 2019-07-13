@@ -13,7 +13,8 @@ import json
 import time
 import os
 import random
-import pprint
+import signal
+
 
 id = 0
 
@@ -37,6 +38,11 @@ prod_exchange_hostname = "production"
 port = 25000 + (test_exchange_index if test_mode else 0)
 exchange_hostname = "test-exch-" + \
     team_name if test_mode else prod_exchange_hostname
+
+
+# unrealized_portfolio = {"BOND": [], "VALBZ": [],
+#                         "VALE": [], "GS": [], "MS": [], "WFC": [], "XLF": []}
+pending_orders = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
@@ -106,8 +112,10 @@ def adr(conn, valbz, vale):
 
         for _ in range(10):
             id += 1
-            conn.write_to_exchange(
+            resp = conn.request(
                 {"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1], "size": 1})
+            _update_bond_orders(resp)
+            print(resp)
 
     if stock_avg - adr_asks[-1] > threshold:
         # place market buy order
@@ -116,20 +124,24 @@ def adr(conn, valbz, vale):
 
         for _ in range(10):
             id += 1
-            conn.write_to_exchange(
+            resp conn.request(
                 {"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1], "size": 1})
+            _update_bond_orders(resp)
+            print(resp)
 
 
 def bonds(conn, data=None):
     global id
     for i in range(0, 5):
-        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                             "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        req = {"type": "add", "order_id": id, "symbol": "BOND",
+               "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10}
+        resp = conn.request(req)
+        _handle_resp(req, resp)
         id += 1
-        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                             "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-        pprint.pprint(resp)
+        req = {"type": "add", "order_id": id, "symbol": "BOND",
+               "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10}
+        resp = conn.request(req)
+        _handle_resp(req, resp)
         id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
@@ -142,6 +154,25 @@ last_prices = {
     "GS": {"best_bid": [], "best_ask": []}, "MS": {"best_bid": [], "best_ask": []}, "WFC": {"best_bid": [], "best_ask": []}, "XLF": {"best_bid": [], "best_ask": []}
 }
 last_n = 15
+
+
+def _handle_resp(req, resp):
+    print(resp)
+    if resp['type'] == 'ack':
+        if req['dir'] == 'BUY':
+            pending_orders[req['order_id']] = [req['price'], req['size']]
+        elif req['dir'] == 'SELL':
+            pending_orders[req['order_id']] = [req['price'], req['size']]
+
+
+def _update_bond_orders(resp):
+    # TODO: do some stuff
+    if
+    if resp['type'] == 'fill':
+        pending_orders[resp['order_id']] -= resp['size']
+    elif resp['type'] == 'out':
+        del pending_orders[resp['order_id']]
+    print(resp)
 
 
 def _update_price_bid(price, symbol, lst):
@@ -169,7 +200,7 @@ def update_price(conn, data):
 
 
 def etf(conn, data):
-    pprint.pprint(data)
+    print(data)
 
 
 def main():
@@ -186,8 +217,9 @@ def main():
         # exponential explosion in pending messages. Please, don't do that!
         try:
             data = conn.read_from_exchange()
+            _update_bond_orders(data)
             print("---DATA---")
-            pprint.pprint(data)
+            print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
                 bonds(conn, data)
@@ -197,13 +229,12 @@ def main():
                 print("CALLED ADR")
                 adr(conn, last_prices["VALBZ"], last_prices["VALE"])
 
-
         except Exception as e:
             print("bonds didnt work")
             print(e)
             sys.exit(1)
 
-        time.sleep(.5)
+        # time.sleep(.1)
 
 
 if __name__ == "__main__":
