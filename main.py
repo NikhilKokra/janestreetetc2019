@@ -98,8 +98,9 @@ def main():
         # exponential explosion in pending messages. Please, don't do that!
         try:
             data = conn.read_from_exchange()
-            #bonds(conn, data)
-            etf(conn, data)
+            if data['type'] == 'book':
+                #bonds(conn, data)
+                etf(conn, data)
         except Exception as e:
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
