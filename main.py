@@ -36,6 +36,7 @@ class Connection(object):
     def __init__(self, hostname,):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.hostname = hostname
+        self.id = 0
         self.exchange = self.connect()
 
     def connect(self):
@@ -56,8 +57,9 @@ class Connection(object):
             raise new Exception("Server returned error: %s" % data["error"])
         return data
     
-    def add_ticker(self, symbol, side, price, size, order_id):
-        return self.request({"type": "add", "order_id": order_id, "symbol": symbol, "dir": side, "price": price, "size": size})
+    def add_ticker(self, symbol, side, price, size):
+        self.id += 1
+        return self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
 
 def bonds(conn):
     i = 0
