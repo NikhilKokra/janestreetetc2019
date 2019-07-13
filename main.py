@@ -76,8 +76,8 @@ def adr(conn, valbz, vale):
     adr_bids = vale['best_bid'][:5]
     adr_asks = vale['best_ask'][:5]
 
-    stock_bids = valbz['best_bid']
-    stock_asks = valbz['best_ask']
+    stock_bids = valbz['best_bid'][:5]
+    stock_asks = valbz['best_ask'][:5]
 
     adr_midpoints = []
     for i in range(len(adr_bids)):
@@ -93,6 +93,11 @@ def adr(conn, valbz, vale):
     stock_avg = sum(stock_midpoints) / len(stock_midpoints)
 
     threshold = largest_diff * .2
+
+    print("threshold " + str(threshold))
+    print("adr best bid " + str(adr_bids[-1]))
+    print("adr best ask " + str(adr_asks[-1]))
+    print("stock avg " + str(stock_avg))
 
     if adr_bids[-1] - stock_avg > threshold:
         # place market sell order
@@ -189,7 +194,9 @@ def main():
                 etf(conn, data)
 
             if len(last_prices["VALE"]["best_bid"]) > 5 and len(last_prices["VALBZ"]["best_bid"]) > 5:
+                print("CALLED ADR")
                 adr(conn, last_prices["VALBZ"], last_prices["VALE"])
+
 
         except Exception as e:
             print("bonds didnt work")
