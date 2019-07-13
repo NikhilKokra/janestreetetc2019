@@ -92,34 +92,9 @@ def adr(conn, valbz, vale):
     stock_bids = [valbz['best_bid']]
     stock_asks = [valbz['best_ask']]
 
-    adr_midpoints = []
-    for i in range(len(adr_bids)):
-        adr_midpoints += [(adr_asks[i][0] + adr_bids[i][0]) / 2]
-
-    stock_midpoints = []
-    for i in range(len(stock_bids)):
-        stock_midpoints += [(stock_asks[i][0] + stock_bids[i][0]) / 2]
-
-    largest_diff = ((max(stock_midpoints) - min(adr_midpoints)) +
-                    (max(adr_midpoints) - min(stock_midpoints))) / 2
-    adr_avg = sum(adr_midpoints) / len(adr_midpoints)
-    stock_avg = sum(stock_midpoints) / len(stock_midpoints)
-
-    threshold = largest_diff * .3
-
-    print(str(adr_midpoints))
-    print(str(adr_bids))
-    print(str(largest_diff))
-
-    print("threshold " + str(threshold))
-    print("adr best bid " + str(adr_bids[-1][0]))
-    print("adr best ask " + str(adr_asks[-1][0]))
-    print("stock avg " + str(stock_avg))
-
-
     #arbitrage opp
     if adr_bids[-1][0] - stock_asks[-1][0] > 10:
-        print("BUYING STOCK CONVERTING TO ADR AND SELLING ADR")
+        print("BUYING STOCK AT " + str(stock_asks[-1][0]) + ", CONVERTING TO ADR AND SELLING ADR AT " + str(adr_bids[-1][0]))
         id += 1
         quantity = min(stock_asks[-1][1], adr_bids[-1][1])
         conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "BUY", "price": stock_asks[-1][0], "size": quantity})
@@ -127,9 +102,9 @@ def adr(conn, valbz, vale):
         conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "size": quantity})
         id += 1
         conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": quantity})
-
+        return True
     if stock_bids[-1][0] - adr_asks[-1][0] > 10:
-        print("BUYING ADR CONVERTING TO STOCK AND SELLING STOCK")
+        print("BUYING ADR AT " + str(adr_asks[-1][0]) + ", CONVERTING TO STOCK AND SELLING STOCK AT " + str(stock_bids[-1][0]))
         id += 1
         quantity = min(stock_bids[-1][1], adr_asks[-1][1])
         conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": quantity})
@@ -137,21 +112,20 @@ def adr(conn, valbz, vale):
         conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALE", "dir": "SELL", "size": quantity})
         id += 1
         conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "price": stock_bids[-1][0], "size": quantity})
-
+        return True
     return False
 
 
 def bonds(conn, data=None):
     global id
-    for i in range(0, 5):
-        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                             "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-        #print(resp)
-        id += 1
-        resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                             "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-        #print(resp)
-        id += 1
+    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
+                         "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
+    #print(resp)
+    id += 1
+    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
+                         "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
+    #print(resp)
+    id += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
