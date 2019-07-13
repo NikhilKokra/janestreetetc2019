@@ -48,6 +48,7 @@ class Connection(object):
         self.id = 0
         self.exchange = self.connect()
         self.holdings = self.hello()
+        print(self.holdings)
 
     def connect(self):
         self.s.connect((self.hostname, port))
@@ -199,6 +200,7 @@ def main():
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
+        """
         try:
             data = conn.read_from_exchange()
             print("---DATA---")
@@ -207,7 +209,7 @@ def main():
                 update_price(conn, data)
                 #bonds(conn, data)
                 etf(conn, data)
-            """
+            
             if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     print("------------------")
@@ -215,13 +217,13 @@ def main():
                     print("DID ADR ARBITRAGE")
                     print("------------------")
                     print("------------------")
-            """
 
 
         except Exception as e:
             print("bonds didnt work")
             print(e)
             sys.exit(1)
+        """
 
 
 
