@@ -153,7 +153,7 @@ def _add_unacked_bond(req):
     not_acked_bonds[req['order_id']] = [req['price'], req['size']]
 
 def _update_bond_orders(resp):
-    if resp['symbol'] == 'BOND':
+    if 'symbol' in resp and resp['symbol'] == 'BOND':
         if resp['type'] == 'ack':
             pending_bond_orders[resp['order_id']
                                 ] = not_acked_bonds[resp['order_id']]
