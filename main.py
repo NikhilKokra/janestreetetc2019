@@ -63,7 +63,7 @@ class Connection(object):
 
 def bonds(conn):
     i = 0
-    for i in range(0, 20):
+    for i in range(0, 1):
         conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "BUY", "price": 998, "size": 40})
         i += 1
         conn.write_to_exchange({"type": "add", "order_id": i, "symbol": "BOND", "dir": "SELL", "price": 1002, "size": 40})
@@ -78,6 +78,7 @@ def main():
     conn.write_to_exchange(
         {"type": "hello", "team": team_name.upper()})
     hello_from_exchange = conn.read_from_exchange()
+    print("The exchange replied:", hello_from_exchange, file=sys.stderr)
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
@@ -90,7 +91,7 @@ def main():
             print("bonds didnt work")
             print(e)
 
-        print("The exchange replied:", hello_from_exchange, file=sys.stderr)
+
 
 
 if __name__ == "__main__":
