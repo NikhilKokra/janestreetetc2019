@@ -48,12 +48,13 @@ class Connection(object):
         self.hostname = hostname
         self.id = 0
         self.exchange = self.connect()
+        self.holdings = self.hello()
 
     def connect(self):
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
 
-    def holdings(self):
+    def hello(self):
         return self.request({"type": "hello", "team": team_name.upper()})
 
     def request(self, obj):
@@ -127,7 +128,7 @@ conversion_fee = 100
 """
 
 def etf(conn, data):
-    print(conn.holdings())
+    print(conn.holdings)
 
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
