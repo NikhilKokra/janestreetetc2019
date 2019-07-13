@@ -125,19 +125,17 @@ def main():
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
 
     while True:
-        data = conn.read_from_exchange()
-        print("---DATA---")
-        print(data)
-
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
         try:
             data = conn.read_from_exchange()
+            print("---DATA---")
+            print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                bonds(conn, data)
+                #bonds(conn, data)
                 etf(conn, data)
         except Exception as e:
             print("bonds didnt work")
