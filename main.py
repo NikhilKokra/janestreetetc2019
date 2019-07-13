@@ -83,9 +83,37 @@ def bonds(conn, data = None):
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
+last_prices = {   
+    "BOND": {"best_bid": [], "best_ask": []}, 
+    "VALBZ": {"best_bid": [], "best_ask": []}, 
+    "VALE": {"best_bid": [], "best_ask": []},
+    "GS": {"best_bid": [], "best_ask": []}, "MS": {"best_bid": [], "best_ask": []}, "WFC": {"best_bid": [], "best_ask": []}, "XLF": {"best_bid": [], "best_ask": []}
+}
+last_n = 15
+
+def _update_price_bid(price, symbol, lst):
+    if len(lst) >= last_n:
+        lst.pop(0)
+    lst.append(price)
+    last_prices[symbol]["best_bid"] = lst
+
+def _update_price_ask(price, symbol, lst):
+    if len(lst) >= last_n:
+        lst.pop(0)
+    lst.append(price)
+    last_prices[symbol]["best_ask"] = lst
+
+def update_price(conn, data):
+    symbol = data['symbol']
+    bid = last_prices[symbol]['best_bid'] 
+    ask = last_prices[symbol]['best_ask']
+    if len(data["buy"]) > 0:
+        _update_price_bid(data["buy"][-1], symbol, bid)
+    if len(data["sell"]) > 0:
+        _update_price_ask(data["sell"][0], symbol, bid)
 
 def etf(conn, data):
-    print(data)
+    print(last_prices)
 
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
@@ -108,6 +136,7 @@ def main():
         try:
             data = conn.read_from_exchange()
             if data['type'] == 'book':
+                update_price(conn, data)
                 bonds(conn, data)
                 etf(conn, data)
         except Exception as e:
