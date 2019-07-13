@@ -227,6 +227,7 @@ def main():
         
         #try:
         data = conn.read_process()
+        print(conn.positions)
         #etf(conn, data)
         if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
             if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
