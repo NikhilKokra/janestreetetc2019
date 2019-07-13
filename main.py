@@ -183,36 +183,36 @@ def etf(conn, data):
     sellingPriceComposed = 0
     buyingPriceComposed = 0
     for key in [key for key in composition] + ["XLF"]:
-        if last_prices[key]['best_bid'] is None:
+        if conn.book[key]['best_bid'] is None:
             return 
     for key in composition:
-        sellingPriceComposed += composition[key]*last_prices[key]['best_bid'][0]
-        buyingPriceComposed += composition[key]*last_prices[key]['best_ask'][0]
-    buyingXLF = last_prices["XLF"]['best_ask']
-    sellingXLF = last_prices["XLF"]['best_bid']
+        sellingPriceComposed += composition[key]*conn.book[key]['best_bid'][0]
+        buyingPriceComposed += composition[key]*conn.book[key]['best_ask'][0]
+    buyingXLF = conn.book["XLF"]['best_ask']
+    sellingXLF = conn.book["XLF"]['best_bid']
     print(buyingXLF)
     buyingPriceXLF = buyingXLF[0]
     sellingPriceXLF = sellingXLF[0]
     if buyingPriceComposed + conversion_fee < 10*sellingPriceXLF:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_ask'][1]//composition[ticker], min_converts)
+            min_converts = min(conn.book[ticker]['best_ask'][1]//composition[ticker], min_converts)
         min_converts = min(sellingXLF[1], min_converts)
         for i in range(min_converts):
             for key in composition:
-                conn.add_ticker(key, "BUY", last_prices[key]['best_ask'][0], composition[key])
+                conn.add_ticker(key, "BUY", conn.book[key]['best_ask'][0], composition[key])
             conn.convert("XLF", "BUY", 10)
             conn.add_ticker("XLF", "SELL", sellingXLF[0], 10)
     elif 10*buyingPriceXLF + conversion_fee < sellingPriceComposed:
         min_converts = 1000000000000000000000000000000
         for ticker in composition:
-            min_converts = min(last_prices[ticker]['best_bid'][1]//composition[ticker], min_converts)
+            min_converts = min(conn.book[ticker]['best_bid'][1]//composition[ticker], min_converts)
         min_converts = min(buyingXLF[1], min_converts)
         for i in range(min_converts):
             conn.add_ticker("XLF", "BUY", buyingXLF[0], 10)
             conn.convert("XLF", "SELL", 10)
             for key in composition:
-                conn.add_ticker(key, "SELL", last_prices[key]['best_bid'][0], composition[key])
+                conn.add_ticker(key, "SELL", conn.book[key]['best_bid'][0], composition[key])
 
 
 def main():
@@ -235,12 +235,12 @@ def main():
                     print("------------------")
                     print("------------------")
 
-
+            """
         except Exception as e:
             print("bonds didnt work")
             print(e)
             sys.exit(1)
-        """
+        
 
 
 
