@@ -160,7 +160,7 @@ last_prices = {
     "BOND": {"best_bid": None, "best_ask": None},
     "VALBZ": {"best_bid": None, "best_ask": None},
     "VALE": {"best_bid": None, "best_ask": None},
-    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": [], "best_ask": []}
+    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
 }
 last_n = 1
 
