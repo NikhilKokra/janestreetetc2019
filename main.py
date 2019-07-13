@@ -99,7 +99,7 @@ def main():
         # exponential explosion in pending messages. Please, don't do that!
 
         try:
-            bonds(data, conn)
+            bonds(conn)
         except Exception as e:
             conn = Connection(exchange_hostname)
             print("bonds didnt work")
