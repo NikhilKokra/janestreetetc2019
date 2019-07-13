@@ -58,7 +58,13 @@ class Connection(object):
         self.exchange = self.connect()
         self.holdings = self.hello()
         self.positions = {}
-        self.open_orders = []
+        self.open = {}
+        self.book = {
+    "BOND": {"best_bid": None, "best_ask": None},
+    "VALBZ": {"best_bid": None, "best_ask": None},
+    "VALE": {"best_bid": None, "best_ask": None},
+    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
+}
         for obj in self.holdings['symbols']:
             self.positions[obj["symbol"]] = obj["position"]
 
@@ -66,12 +72,19 @@ class Connection(object):
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
 
+    def update_price(self, data):
+        symbol = data['symbol']
+        if len(data["buy"]) > 0:
+            self.book[symbol]["best_bid"] = data["buy"][0]
+        if len(data["sell"]) > 0:
+            self.book[symbol]["best_ask"] = data["sell"][0]
+
     def hello(self):
         return self.request({"type": "hello", "team": team_name.upper()})
 
     def request(self, obj):
         self.write_to_exchange(obj)
-        return self.read_from_exchange()
+        return self.read_process()
 
     def write_to_exchange(self, obj):
         json.dump(obj, self.exchange)
@@ -79,8 +92,21 @@ class Connection(object):
 
     def read_from_exchange(self):
         data = json.loads(self.exchange.readline())
-        if data["type"] == "error":
-            raise Exception("Server returned error: %s" % data["error"])
+        return data
+
+    def read_process(self):
+        data = self.read_from_exchange()
+        if data['type'] == 'book':
+            self.update_price(data)
+        elif data['type'] == "fill":
+            c = -1
+            if data['dir'] == "BUY":
+                c = 1
+            self.positions[data['symbol']] += c*data['size']
+            self.positions[data['USD']] -= c*data['size']*data['price']
+            del self.open[data['symbol']]
+        elif data['type'] == 'ack':
+            self.open[data['symbol']] = data['order_id']
         return data
 
     def convert(self, symbol, side, size):
@@ -93,9 +119,6 @@ class Connection(object):
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
-        print(req)
-        filled = self.read_from_exchange()
-        print(filled)
         self.id += 1
         return req
 
@@ -146,22 +169,6 @@ def bonds(conn, data=None):
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
 
-last_prices = {
-    "BOND": {"best_bid": None, "best_ask": None},
-    "VALBZ": {"best_bid": None, "best_ask": None},
-    "VALE": {"best_bid": None, "best_ask": None},
-    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
-}
-last_n = 1
-
-
-def update_price(conn, data):
-    symbol = data['symbol']
-    if len(data["buy"]) > 0:
-        last_prices[symbol]["best_bid"] = data["buy"][0]
-    if len(data["sell"]) > 0:
-        last_prices[symbol]["best_ask"] = data["sell"][0]
-
 composition = {
     "BOND": 3,
     "GS": 2, 
@@ -210,8 +217,6 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
-    conn.add_ticker("XLF", "BUY", 1, 1)
-    """
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
@@ -219,14 +224,9 @@ def main():
         # exponential explosion in pending messages. Please, don't do that!
         
         try:
-            data = conn.read_from_exchange()
-            print("---DATA---")
-            print(data)
-            if data['type'] == 'book':
-                update_price(conn, data)
-                #bonds(conn, data)
-                etf(conn, data)
-            
+            data = conn.read_process()
+            etf(conn, data)
+            """
             if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     print("------------------")
