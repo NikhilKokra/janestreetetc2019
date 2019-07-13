@@ -31,6 +31,32 @@ exchange_hostname = "test-exch-" + \
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
+class Connection(object):
+    def __init__(self, hostname,):
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.hostname = hostname
+        self.exchange = self.connect()
+
+
+    def connect(self):
+        self.s.connect((self.hostname, port))
+        return self.s.makefile('rw', 1)
+
+    def request(self, obj):
+        self.write_to_exchange(obj)
+        return self.read_from_exchange()
+
+
+    def write_to_exchange(self, obj):
+        json.dump(obj, self.exchange)
+        self.exchange.write("\n")
+
+
+    def read_from_exchange(self):
+        return json.loads(self.exchange.readline())
+
+"""
+
 
 def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,20 +72,17 @@ def write_to_exchange(exchange, obj):
 
 def read_from_exchange(exchange):
     return json.loads(exchange.readline())
-
+"""
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
 def main():
-    exchange = connect()
-    write_to_exchange(exchange, {"type": "hello", "team": team_name.upper()})
-    hello_from_exchange = read_from_exchange(exchange)
-    first_beat = read_from_exchange(exchange)
+    conn = Connection(exchange_hostname)
+    print(conn.request({"type": "hello", "team": team_name.upper()}))
     # A common mistake people make is to call write_to_exchange() > 1
     # time for every read_from_exchange() response.
     # Since many write messages generate marketdata, this will cause an
     # exponential explosion in pending messages. Please, don't do that!
-    print("The exchange replied:", first_beat, file=sys.stderr)
 
 
 if __name__ == "__main__":
