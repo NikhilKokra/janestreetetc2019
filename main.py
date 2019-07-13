@@ -53,6 +53,9 @@ class Connection(object):
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
 
+    def holdings(self):
+        return self.request({"type": "hello", "team": team_name.upper()})
+
     def request(self, obj):
         self.write_to_exchange(obj)
         return self.read_from_exchange()
@@ -112,8 +115,19 @@ def update_price(conn, data):
     if len(data["sell"]) > 0:
         _update_price_ask(data["sell"][0], symbol, bid)
 
+"""
+composition = {
+    "BOND": 3,
+    "GS": 2, 
+    "MS": 3,
+    "WFC": 2
+}
+
+conversion_fee = 100
+"""
+
 def etf(conn, data):
-    print(data)
+    print(conn.holdings())
 
 def main():
     fair_values = {"BOND": 1000, "VALBZ": 0, "VALE": 0,
@@ -135,7 +149,7 @@ def main():
             print(data)
             if data['type'] == 'book':
                 update_price(conn, data)
-                bonds(conn, data)
+                #bonds(conn, data)
                 etf(conn, data)
         except Exception as e:
             print("bonds didnt work")
