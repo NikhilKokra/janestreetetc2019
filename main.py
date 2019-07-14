@@ -146,27 +146,42 @@ class Connection(object):
         return req
 
 
-def adr(conn, valbz, vale):
+def adr(conn, valbz, vale, state=None):
     adr_bids = vale['best_bid']
     adr_asks = vale['best_ask']
 
     stock_bids = valbz['best_bid']
     stock_asks = valbz['best_ask']
 
-    # arbitrage opp
-    if adr_bids[0] - stock_asks[0] > 10:
+    # arbitrage VALBZ buy
+    if state == None and adr_bids[0] - stock_asks[0] > 10:
         quantity = min(stock_asks[1], adr_bids[1])
         conn.add_ticker("VALBZ", "BUY", stock_asks[0], quantity)
-        conn.convert("VALBZ", "SELL", quantity)
-        conn.add_ticker("VALE", "SELL", adr_bids[0], quantity)
-        return True
-    if stock_bids[0] - adr_asks[0] > 10:
-        quantity = min(stock_bids[1], adr_asks[1])
+        return "valbzbuy"
+
+    if state == "valbzbuy" and conn.positions["VALBZ"] > 0:
+        conn.convert("VALBZ", "SELL", conn.positions["VALBZ"])
+        return "valbzconvert"
+
+    if state == "valbzconvert" and conn.positions["VALE"] > 0:
+        conn.add_ticker("VALE", "SELL", adr_bids[0], conn.positions["VALE"])
+        return None
+
+    #arbitrage VALE buy
+    if state == None and stock_bids[0] - adr_asks[0] > 10:
+        quantity = min(stock_asks[1], adr_bids[1])
         conn.add_ticker("VALE", "BUY", adr_asks[0], quantity)
-        conn.convert("VALE", "SELL", quantity)
-        conn.add_ticker("VALBZ", "SELL", stock_bids[0], quantity)
-        return True
-    return False
+        return "valebuy"
+
+    if state == "valebuy" and conn.positions["VALE"] > 0:
+        conn.convert("VALE", "SELL", conn.positions["VALE"])
+        return "valeconvert"
+
+    if state == "valeconvert" and conn.positions["VALBZ"] > 0:
+        conn.add_ticker("VALBZ", "SELL", adr_bids[0], conn.positions["VALBZ"])
+        return None
+
+    return None
 
 limits = {
         'BOND': 100,
@@ -289,6 +304,7 @@ def etf(conn, data):
 def main():
     conn = Connection(exchange_hostname)
     done = False
+    adrstate = None
     while True:
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
@@ -299,15 +315,10 @@ def main():
             data = conn.read_process()
             #etf(conn, data)
             #bonds(conn)
-            """
+
             if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
-                if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
-                    print("------------------")
-                    print("------------------")
-                    print("DID ADR ARBITRAGE")
-                    print("------------------")
-                    print("------------------")
-            """
+                adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
+
         except Exception as e:
             print(e)
             sys.exit(1)
