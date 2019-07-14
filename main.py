@@ -88,13 +88,10 @@ class Connection(object):
 
     def request(self, obj):
         self.write_to_exchange(obj)
-<<<<<<< HEAD
         return self.read_process()
-=======
-        resp = self.read_from_exchange()
-        _update_bond_orders(resp)
-        return resp
->>>>>>> eca3f5d11d90c282637a49ec53d1a5d747cb80f4
+        #resp = self.read_from_exchange()
+        #_update_bond_orders(resp)
+        #return resp
 
     def write_to_exchange(self, obj):
         json.dump(obj, self.exchange)
@@ -131,15 +128,10 @@ class Connection(object):
 
     def convert(self, symbol, side, size):
         print("CONVERTING %s %s %s" % (symbol, side, size))
-<<<<<<< HEAD
         self.conversions[self.id]['symbol'] = symbol
         self.conversions[self.id]['side'] = side
         self.conversions[self.id]['size'] = size
         req = self.request({"type": "convert", "order_id": self.id, "symbol": symbol, "dir": side, "size": size})
-=======
-        req = self.request({"type": "convert", "order_id": self.id,
-                            "symbol": symbol, "dir": side, "size": size})
->>>>>>> eca3f5d11d90c282637a49ec53d1a5d747cb80f4
         self.id += 1
         return req
 
