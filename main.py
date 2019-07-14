@@ -146,7 +146,7 @@ class Connection(object):
         return req
 
 
-def adr(conn, valbz, vale, state=None):
+def adr(conn, valbz, vale, state):
     adr_bids = vale['best_bid']
     adr_asks = vale['best_ask']
 
