@@ -289,20 +289,21 @@ def etf(conn, data):
 def main():
     conn = Connection(exchange_hostname)
     bools = [False, False]
-    while True:
-        # A common mistake people make is to call write_to_exchange() > 1
-        # time for every read_from_exchange() response.
-        # Since many write messages generate marketdata, this will cause an
-        # exponential explosion in pending messages. Please, don't do that!
-        
-        try:
-            data = conn.read_process()
+    try:
+        while True:
+            # A common mistake people make is to call write_to_exchange() > 1
+            # time for every read_from_exchange() response.
+            # Since many write messages generate marketdata, this will cause an
+            # exponential explosion in pending messages. Please, don't do that!
+            
             if conn.book['VALBZ']['best_ask'] != None and not bools[0]:
                 bools[0] = True
                 conn.add_ticker("VALBZ", "BUY", conn.book['VALBZ']['best_ask'][0], conn.book['VALBZ']['best_ask'][1])
             if conn.positions["VALBZ"] > 0 and not bools[1]:
                 bools[1] = True
                 conn.convert("VALE", "BUY", 1)
+            data = conn.read_process()
+
             print(conn.positions)
             #etf(conn, data)
             #bonds(conn)
@@ -315,9 +316,9 @@ def main():
                     print("------------------")
                     print("------------------")
             """
-        except Exception as e:
-            print(e)
-            sys.exit(1)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 
 
