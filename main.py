@@ -319,6 +319,8 @@ def main():
             if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
                 adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
 
+            print(str(conn.positions))
+
         except Exception as e:
             print("somtehign abf happened ")
             print(e)
