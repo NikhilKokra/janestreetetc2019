@@ -295,13 +295,14 @@ def main():
             # time for every read_from_exchange() response.
             # Since many write messages generate marketdata, this will cause an
             # exponential explosion in pending messages. Please, don't do that!
-            
+            """
             if conn.book['VALBZ']['best_ask'] != None and not bools[0]:
                 bools[0] = True
                 conn.add_ticker("VALBZ", "BUY", conn.book['VALBZ']['best_ask'][0], conn.book['VALBZ']['best_ask'][1])
             if conn.positions["VALBZ"] > 0 and not bools[1]:
                 bools[1] = True
                 conn.convert("VALE", "BUY", 1)
+            """
             data = conn.read_process()
 
             print(conn.positions)
