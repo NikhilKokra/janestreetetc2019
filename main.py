@@ -114,6 +114,8 @@ class Connection(object):
                 else:
                     self.positions["VALBZ"] += c*size
                     self.positions["VALE"] -= c*size
+        print(self.positions)
+
         return data
 
     def convert(self, symbol, side, size):
