@@ -42,15 +42,6 @@ exchange_hostname = "test-exch-" + \
 
 
 class Connection(object):
-    limits = {
-        'BOND': 100,
-        "VALBZ": 10,
-        "VALE":	10,
-        "GS": 100,
-        "MS": 100,
-        "WFC": 100,
-        "XLF": 100
-    }
     def __init__(self, hostname,):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.hostname = hostname
@@ -173,18 +164,24 @@ def adr(conn, valbz, vale):
         return True
     return False
 
+limits = {
+        'BOND': 100,
+        "VALBZ": 10,
+        "VALE":	10,
+        "GS": 100,
+        "MS": 100,
+        "WFC": 100,
+        "XLF": 100
+}
 
 def bonds(conn, data=None):
-    global id
-    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                         "dir": "BUY", "price": (1000 - random.randint(1, 6)), "size": 10})
-    #print(resp)
-    id += 1
-    resp = conn.request({"type": "add", "order_id": id, "symbol": "BOND",
-                         "dir": "SELL", "price": (1000 + random.randint(1, 6)), "size": 10})
-    #print(resp)
-    id += 1
-
+    selling_bond_price = conn.book['BOND']['best_bid']
+    buying_bond_price = conn.book['BOND']['best_ask'] 
+    bond_holdings = conn.positions['BOND']
+    if buying_bond_price[0] < 1000 and bond_holdings < limits["BOND"]:
+        conn.add_ticker("BOND", "BUY", buying_bond_price[0], min(limits["BOND"]-bond_holdings, buying_bond_price[1]))
+    if selling_bond_price[0] > 1000 and bond_holdings > 0:
+        conn.add_ticker("BOND", "SELL", selling_bond_price[0], bond_holdings)
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
 
@@ -244,8 +241,11 @@ def main():
         
         #try:
         data = conn.read_process()
-        print(conn.positions)
+        #print(conn.positions)
         #etf(conn, data)
+        bonds(conn)
+        """
+
         if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
             if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
                 print("------------------")
@@ -253,7 +253,6 @@ def main():
                 print("DID ADR ARBITRAGE")
                 print("------------------")
                 print("------------------")
-        """
         except Exception as e:
             print("bonds didnt work")
             print(e)
