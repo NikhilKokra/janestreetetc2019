@@ -235,9 +235,11 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
+    done = False
     while True:
-        if conn.book["BOND"]['best_ask'] is not None:
+        if conn.book["BOND"]['best_ask'] is not None and not done:
             conn.add_ticker("BOND", "BUY", conn.book["BOND"]['best_ask'][0], conn.book["BOND"]['best_ask'][1])
+            done = True
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
