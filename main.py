@@ -299,10 +299,16 @@ def main():
             #bonds(conn)
 
             if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
-                adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
-
-            print(str(conn.positions))
-
+                if adrstate == "valbzconvert" or adrstate == "valeconvert":
+                    adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
+                    if adrstate == None:
+                        print("--------------------")
+                        print("--------------------")
+                        print("COMPLETED ARBITRAGE")
+                        print("--------------------")
+                        print("--------------------")
+                else:
+                    adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
         except Exception as e:
             print("somtehign abf happened ")
             print(e)
