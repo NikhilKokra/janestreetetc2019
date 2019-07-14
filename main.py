@@ -127,11 +127,9 @@ class Connection(object):
 
 
     def add_ticker(self, symbol, side, price, size):
-        print(self.positions)
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
-        print(self.positions)
         return req
 
 
@@ -239,6 +237,7 @@ def main():
     conn = Connection(exchange_hostname)
     conn.add_ticker("BOND", "BUY", 20, 5)
     while True:
+        print(conn.positions)
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
