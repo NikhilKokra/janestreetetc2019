@@ -175,6 +175,8 @@ limits = {
 }
 
 def bonds(conn, data=None):
+    if conn.book['BOND']['best_bid'] is None:
+        return
     selling_bond_price = conn.book['BOND']['best_bid']
     buying_bond_price = conn.book['BOND']['best_ask'] 
     bond_holdings = conn.positions['BOND']
