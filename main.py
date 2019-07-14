@@ -114,8 +114,6 @@ class Connection(object):
                 else:
                     self.positions["VALBZ"] += c*size
                     self.positions["VALE"] -= c*size
-        print(self.positions)
-
         return data
 
     def convert(self, symbol, side, size):
@@ -129,9 +127,11 @@ class Connection(object):
 
 
     def add_ticker(self, symbol, side, price, size):
+        print(self.positions)
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
         req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
+        print(self.positions)
         return req
 
 
