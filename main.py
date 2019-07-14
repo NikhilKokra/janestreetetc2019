@@ -290,33 +290,27 @@ def main():
     conn = Connection(exchange_hostname)
     done = False
     while True:
-        if conn.book["BOND"]['best_ask'] is not None and not done:
-            conn.add_ticker("BOND", "SELL", conn.book["BOND"]['best_bid'][0], conn.book["BOND"]['best_bid'][1])
-            done = True
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
         # exponential explosion in pending messages. Please, don't do that!
         
-        #try:
-        data = conn.read_process()
-        print(conn.positions)
-        #print(conn.positions)
-        #etf(conn, data)
-        #bonds(conn)
-        """
-
-        if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
-            if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
-                print("------------------")
-                print("------------------")
-                print("DID ADR ARBITRAGE")
-                print("------------------")
-                print("------------------")
+        try:
+            data = conn.read_process()
+            #etf(conn, data)
+            #bonds(conn)
+            """
+            if conn.book["VALBZ"]["best_bid"] is not None and conn.book["VALE"]["best_bid"] is not None:
+                if adr(conn, conn.book["VALBZ"], conn.book["VALE"]):
+                    print("------------------")
+                    print("------------------")
+                    print("DID ADR ARBITRAGE")
+                    print("------------------")
+                    print("------------------")
+            """
         except Exception as e:
             print(e)
             sys.exit(1)
-        """
 
 
 
