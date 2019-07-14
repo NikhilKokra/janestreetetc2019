@@ -235,9 +235,9 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
-    conn.add_ticker("BOND", "BUY", 1001, 5)
     while True:
-        print(conn.positions)
+        if conn.book["BOND"]['best_ask'] is not None:
+            conn.add_ticker("BOND", "BUY", conn.book["BOND"]['best_ask'][0], conn.book["BOND"]['best_ask'][1])
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
         # Since many write messages generate marketdata, this will cause an
@@ -245,6 +245,7 @@ def main():
         
         #try:
         data = conn.read_process()
+        print(conn.positions)
         #print(conn.positions)
         #etf(conn, data)
         #bonds(conn)
