@@ -156,11 +156,12 @@ def adr(conn, valbz, vale, state):
         conn.add_ticker("VALBZ", "BUY", stock_asks[0], quantity)
         return "valbzbuy"
 
-    if state == "valbzbuy" and conn.positions["VALBZ"] > 0:
+
+    if state == "valbzbuy" and conn.positions["VALBZ"] != None and conn.positions["VALBZ"] > 0:
         conn.convert("VALBZ", "SELL", conn.positions["VALBZ"])
         return "valbzconvert"
 
-    if state == "valbzconvert" and conn.positions["VALE"] > 0:
+    if state == "valbzconvert" and conn.positions["VALE"] != None and conn.positions["VALE"] > 0:
         conn.add_ticker("VALE", "SELL", adr_bids[0], conn.positions["VALE"])
         return None
 
@@ -170,11 +171,11 @@ def adr(conn, valbz, vale, state):
         conn.add_ticker("VALE", "BUY", adr_asks[0], quantity)
         return "valebuy"
 
-    if state == "valebuy" and conn.positions["VALE"] > 0:
+    if state == "valebuy" and conn.positions["VALE"] != None and conn.positions["VALE"] > 0:
         conn.convert("VALE", "SELL", conn.positions["VALE"])
         return "valeconvert"
 
-    if state == "valeconvert" and conn.positions["VALBZ"] > 0:
+    if state == "valeconvert" and conn.positions["VALBZ"] != None and conn.positions["VALBZ"] > 0:
         conn.add_ticker("VALBZ", "SELL", adr_bids[0], conn.positions["VALBZ"])
         return None
 
