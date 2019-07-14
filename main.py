@@ -320,6 +320,7 @@ def main():
                 adrstate = adr(conn, conn.book["VALBZ"], conn.book["VALE"], adrstate)
 
         except Exception as e:
+            print("somtehign abf happened ")
             print(e)
             sys.exit(1)
 
