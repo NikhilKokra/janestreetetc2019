@@ -238,7 +238,7 @@ def main():
     done = False
     while True:
         if conn.book["BOND"]['best_ask'] is not None and not done:
-            conn.add_ticker("BOND", "BUY", conn.book["BOND"]['best_ask'][0], conn.book["BOND"]['best_ask'][1])
+            conn.add_ticker("BOND", "SELL", conn.book["BOND"]['best_bid'][0], conn.book["BOND"]['best_bid'][1])
             done = True
         # A common mistake people make is to call write_to_exchange() > 1
         # time for every read_from_exchange() response.
