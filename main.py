@@ -55,6 +55,8 @@ class Connection(object):
         self.holdings = self.hello()
 
     def connect(self):
+        if not test_mode:
+            self.s.settimeout(1.0)
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
 
@@ -127,7 +129,13 @@ def bonds_helper(conn, price, target, bond_orders_d, target_order):
 def bonds(conn):
     bond_orders = pending_bond_orders.values()
     bond_orders_d = dict([(a, b) for [a, b] in bond_orders])
-
+    
+    print()
+    print()
+    print()
+    print()
+    print(bond_orders)
+    print(str(bond_orders_d))
     bonds_helper(conn, 995, 30, bond_orders_d, "BUY")
     bonds_helper(conn, 996, 25, bond_orders_d, "BUY")
     bonds_helper(conn, 997, 20, bond_orders_d, "BUY")
@@ -156,7 +164,7 @@ def _update_bond_orders(resp):
     if 'symbol' in resp and resp['symbol'] == 'BOND':
         if resp['type'] == 'ack':
             pending_bond_orders[resp['order_id']
-                                ] = not_acked_bonds[resp['order_id']]
+                                ] = not_acked_bonds[resp['order_id']].copy()
             del not_acked_bonds[resp['order_id']]
         elif resp['type'] == 'fill':
             pending_bond_orders[resp['order_id']] -= resp['size']
@@ -241,7 +249,7 @@ def main():
                 update_price(conn, data)
                 bonds(conn)
                 #etf(conn, data)
-            """
+            
             if last_prices["VALBZ"]["best_bid"] is not None and last_prices["VALE"]["best_bid"] is not None:
                 if adr(conn, last_prices["VALBZ"], last_prices["VALE"]):
                     print("------------------")
@@ -249,7 +257,7 @@ def main():
                     print("DID ADR ARBITRAGE")
                     print("------------------")
                     print("------------------")
-            """
+            
 
         except Exception as e:
             print(e)
