@@ -13,9 +13,8 @@ import json
 import time
 import os
 import random
-import pprint
+import signal
 
-id = 0
 
 # ~~~~~============== CONFIGURATION  ==============~~~~~
 # replace REPLACEME with your team name!
@@ -37,6 +36,12 @@ prod_exchange_hostname = "production"
 port = 25000 + (test_exchange_index if test_mode else 0)
 exchange_hostname = "test-exch-" + \
     team_name if test_mode else prod_exchange_hostname
+
+
+# unrealized_portfolio = {"BOND": [], "VALBZ": [],
+#                         "VALE": [], "GS": [], "MS": [], "WFC": [], "XLF": []}
+not_acked_bonds = {}
+pending_bond_orders = {}
 
 # ~~~~~============== NETWORKING CODE ==============~~~~~
 
@@ -66,6 +71,8 @@ class Connection(object):
             self.positions[obj["symbol"]] = obj["position"]
 
     def connect(self):
+        if not test_mode:
+            self.s.settimeout(1.0)
         self.s.connect((self.hostname, port))
         return self.s.makefile('rw', 1)
 
@@ -81,7 +88,13 @@ class Connection(object):
 
     def request(self, obj):
         self.write_to_exchange(obj)
+<<<<<<< HEAD
         return self.read_process()
+=======
+        resp = self.read_from_exchange()
+        _update_bond_orders(resp)
+        return resp
+>>>>>>> eca3f5d11d90c282637a49ec53d1a5d747cb80f4
 
     def write_to_exchange(self, obj):
         json.dump(obj, self.exchange)
@@ -118,49 +131,48 @@ class Connection(object):
 
     def convert(self, symbol, side, size):
         print("CONVERTING %s %s %s" % (symbol, side, size))
+<<<<<<< HEAD
         self.conversions[self.id]['symbol'] = symbol
         self.conversions[self.id]['side'] = side
         self.conversions[self.id]['size'] = size
         req = self.request({"type": "convert", "order_id": self.id, "symbol": symbol, "dir": side, "size": size})
+=======
+        req = self.request({"type": "convert", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "size": size})
+>>>>>>> eca3f5d11d90c282637a49ec53d1a5d747cb80f4
         self.id += 1
         return req
 
-
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
-        req = self.request({"type": "add", "order_id": self.id, "symbol": symbol, "dir": side, "price": price, "size": size})
+        if symbol == "BOND":
+            _add_unacked_bond({"type": "add", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "price": price, "size": size})
+        req = self.request({"type": "add", "order_id": self.id,
+                            "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
         return req
 
 
 def adr(conn, valbz, vale):
-    global id
-    adr_bids = [vale['best_bid']]
-    adr_asks = [vale['best_ask']]
+    adr_bids = vale['best_bid']
+    adr_asks = vale['best_ask']
 
-    stock_bids = [valbz['best_bid']]
-    stock_asks = [valbz['best_ask']]
+    stock_bids = valbz['best_bid']
+    stock_asks = valbz['best_ask']
 
-    #arbitrage opp
-    if adr_bids[-1][0] - stock_asks[-1][0] > 10:
-        print("BUYING STOCK AT " + str(stock_asks[-1][0]) + ", CONVERTING TO ADR AND SELLING ADR AT " + str(adr_bids[-1][0]))
-        id += 1
-        quantity = min(stock_asks[-1][1], adr_bids[-1][1])
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "BUY", "price": stock_asks[-1][0], "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "SELL", "price": adr_bids[-1][0], "size": quantity})
+    # arbitrage opp
+    if adr_bids[0] - stock_asks[0] > 10:
+        quantity = min(stock_asks[1], adr_bids[1])
+        conn.add_ticker("VALBZ", "BUY", stock_asks[0], quantity)
+        conn.convert("VALBZ", "SELL", quantity)
+        conn.add_ticker("VALE", "SELL", adr_bids[0], quantity)
         return True
-    if stock_bids[-1][0] - adr_asks[-1][0] > 10:
-        print("BUYING ADR AT " + str(adr_asks[-1][0]) + ", CONVERTING TO STOCK AND SELLING STOCK AT " + str(stock_bids[-1][0]))
-        id += 1
-        quantity = min(stock_bids[-1][1], adr_asks[-1][1])
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALE", "dir": "BUY", "price": adr_asks[-1][0], "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "convert", "order_id": id, "symbol": "VALE", "dir": "SELL", "size": quantity})
-        id += 1
-        conn.write_to_exchange({"type": "add", "order_id": id, "symbol": "VALBZ", "dir": "SELL", "price": stock_bids[-1][0], "size": quantity})
+    if stock_bids[0] - adr_asks[0] > 10:
+        quantity = min(stock_bids[1], adr_asks[1])
+        conn.add_ticker("VALE", "BUY", adr_asks[0], quantity)
+        conn.convert("VALE", "SELL", quantity)
+        conn.add_ticker("VALBZ", "SELL", stock_bids[0], quantity)
         return True
     return False
 
@@ -174,28 +186,77 @@ limits = {
         "XLF": 100
 }
 
-def bonds(conn, data=None):
-    if conn.book['BOND']['best_bid'] is None:
-        return
-    selling_bond_price = conn.book['BOND']['best_bid']
-    buying_bond_price = conn.book['BOND']['best_ask'] 
-    bond_holdings = conn.positions['BOND']
-    if buying_bond_price[0] < 1000 and bond_holdings < limits["BOND"]:
-        conn.add_ticker("BOND", "BUY", buying_bond_price[0], min(limits["BOND"]-bond_holdings, buying_bond_price[1]))
-    if selling_bond_price[0] > 1000 and bond_holdings > 0:
-        conn.add_ticker("BOND", "SELL", selling_bond_price[0], bond_holdings)
+def bonds_helper(conn, price, target, bond_orders_d, target_order):
+    if price not in bond_orders_d:
+        conn.add_ticker("BOND", target_order, price, target)
+    elif bond_orders_d[price] < target:
+        conn.add_ticker("BOND", target_order, price, target - bond_orders_d[price])
+
+def bonds(conn):
+    bond_orders = pending_bond_orders.values()
+    bond_orders_d = dict([(a, b) for [a, b] in bond_orders])
+    
+    print()
+    print()
+    print()
+    print()
+    print(bond_orders)
+    print(str(bond_orders_d))
+    bonds_helper(conn, 995, 30, bond_orders_d, "BUY")
+    bonds_helper(conn, 996, 25, bond_orders_d, "BUY")
+    bonds_helper(conn, 997, 20, bond_orders_d, "BUY")
+    bonds_helper(conn, 998, 15, bond_orders_d, "BUY")
+    bonds_helper(conn, 999, 10, bond_orders_d, "BUY")
+    bonds_helper(conn, 1001, 10, bond_orders_d, "SELL")
+    bonds_helper(conn, 1002, 15, bond_orders_d, "SELL")
+    bonds_helper(conn, 1003, 20, bond_orders_d, "SELL")
+    bonds_helper(conn, 1004, 25, bond_orders_d, "SELL")
+    bonds_helper(conn, 1005, 30, bond_orders_d, "SELL")
+
 # ~~~~~============== MAIN LOOP ==============~~~~~
+
+last_prices = {
+    "BOND": {"best_bid": None, "best_ask": None},
+    "VALBZ": {"best_bid": None, "best_ask": None},
+    "VALE": {"best_bid": None, "best_ask": None},
+    "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
+}
+last_n = 15
+
+def _add_unacked_bond(req):
+    not_acked_bonds[req['order_id']] = [req['price'], req['size']]
+
+def _update_bond_orders(resp):
+    if 'symbol' in resp and resp['symbol'] == 'BOND':
+        if resp['type'] == 'ack':
+            pending_bond_orders[resp['order_id']
+                                ] = not_acked_bonds[resp['order_id']].copy()
+            del not_acked_bonds[resp['order_id']]
+        elif resp['type'] == 'fill':
+            pending_bond_orders[resp['order_id']] -= resp['size']
+        elif resp['type'] == 'out':
+            del pending_bond_orders[resp['order_id']]
+    print(resp)
+
+
+def update_price(conn, data):
+    symbol = data['symbol']
+    if len(data["buy"]) > 0:
+        last_prices[symbol]["best_bid"] = data["buy"][0]
+    if len(data["sell"]) > 0:
+        last_prices[symbol]["best_ask"] = data["sell"][0]
 
 
 composition = {
     "BOND": 3,
-    "GS": 2, 
+    "GS": 2,
     "MS": 3,
     "WFC": 2
 }
 
 conversion_fee = 100
-#condition: add up all composing < 10*xlf
+# condition: add up all composing < 10*xlf
+
 
 def etf(conn, data):
     sellingPriceComposed = 0
@@ -261,7 +322,6 @@ def main():
                 print("------------------")
                 print("------------------")
         except Exception as e:
-            print("bonds didnt work")
             print(e)
             sys.exit(1)
         """
