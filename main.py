@@ -137,9 +137,6 @@ class Connection(object):
 
     def add_ticker(self, symbol, side, price, size):
         print("%s %s $%s, %s shares" % (symbol, side, price, size))
-        if symbol == "BOND":
-            _add_unacked_bond({"type": "add", "order_id": self.id,
-                            "symbol": symbol, "dir": side, "price": price, "size": size})
         req = self.request({"type": "add", "order_id": self.id,
                             "symbol": symbol, "dir": side, "price": price, "size": size})
         self.id += 1
@@ -229,21 +226,6 @@ last_prices = {
     "GS": {"best_bid": None, "best_ask": None}, "MS": {"best_bid": None, "best_ask": None}, "WFC": {"best_bid": None, "best_ask": None}, "XLF": {"best_bid": None, "best_ask": None}
 }
 last_n = 15
-
-def _add_unacked_bond(req):
-    not_acked_bonds[req['order_id']] = [req['price'], req['size']]
-
-def _update_bond_orders(resp):
-    if 'symbol' in resp and resp['symbol'] == 'BOND':
-        if resp['type'] == 'ack':
-            pending_bond_orders[resp['order_id']
-                                ] = not_acked_bonds[resp['order_id']].copy()
-            del not_acked_bonds[resp['order_id']]
-        elif resp['type'] == 'fill':
-            pending_bond_orders[resp['order_id']] -= resp['size']
-        elif resp['type'] == 'out':
-            del pending_bond_orders[resp['order_id']]
-    print(resp)
 
 
 def update_price(conn, data):
