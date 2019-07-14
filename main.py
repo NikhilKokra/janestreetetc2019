@@ -58,8 +58,13 @@ class Connection(object):
         self.exchange = self.connect()
         self.holdings = self.hello()
         self.positions = {}
-        self.open = {}
-        self.reverse = {}
+        self.conversions = {}
+        self.composition = {
+    "BOND": 3,
+    "GS": 2, 
+    "MS": 3,
+    "WFC": 2
+}
         self.book = {
     "BOND": {"best_bid": None, "best_ask": None},
     "VALBZ": {"best_bid": None, "best_ask": None},
@@ -105,10 +110,26 @@ class Connection(object):
                 c = 1
             self.positions[data['symbol']] += c*data['size']
             self.positions['USD'] -= c*data['size']*data['price']
+        elif data['type'] == 'ack':
+            if data['order_id'] in self.conversions:
+                size = self.conversions[data['order_id']]['size']
+                c = -1
+                if self.conversions[data['order_id']]['side'] == "BUY":
+                    c = 1
+                if self.conversions[data['order_id']]['symbol'] == "XLF":
+                    self.positions["XLF"] += c*size
+                    for ticker in self.composition:
+                        self.positions[ticker] -= c*(size//10)*self.composition[ticker]
+                else:
+                    self.positions["VALBZ"] += c*size
+                    self.positions["VALE"] -= c*size
         return data
 
     def convert(self, symbol, side, size):
         print("CONVERTING %s %s %s" % (symbol, side, size))
+        self.conversions[self.id]['symbol'] = symbol
+        self.conversions[self.id]['side'] = side
+        self.conversions[self.id]['size'] = size
         req = self.request({"type": "convert", "order_id": self.id, "symbol": symbol, "dir": side, "size": size})
         self.id += 1
         return req
