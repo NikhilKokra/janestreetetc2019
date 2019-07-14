@@ -235,7 +235,7 @@ def etf(conn, data):
 
 def main():
     conn = Connection(exchange_hostname)
-    conn.add_ticker("BOND", "BUY", 20, 5)
+    conn.add_ticker("BOND", "BUY", 1001, 5)
     while True:
         print(conn.positions)
         # A common mistake people make is to call write_to_exchange() > 1
